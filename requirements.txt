@@ -1,0 +1,18 @@
+# AutoControlPC Dependencies
+
+# Core mouse and keyboard control
+pynput==1.7.6
+
+# Image processing and screenshots
+Pillow>=9.0.0
+opencv-python>=4.5.0
+
+# Numerical operations
+numpy>=1.20.0
+
+# OCR and text recognition
+easyocr>=1.6.0
+torch>=1.9.0
+
+# Testing (optional)
+pytest>=7.0.0
