@@ -1,43 +1,58 @@
 # AutoControlPC
 
-A comprehensive Python automation library for controlling Windows PC with mouse and keyboard, featuring advanced OCR-based UI interaction capabilities.
+一个用于 Windows 自动化的 Python 项目，支持鼠标、键盘控制及 OCR 识别，适合批量 UI 自动化测试。
 
-## Features
+## 主要功能
 
-- **Mouse Control**: Move, click, drag, scroll operations
-- **Keyboard Control**: Type text, press keys, key combinations (Ctrl+C, Win+V, etc.)
-- **OCR Recognition**: Find and interact with on-screen text using EasyOCR
-- **Automation Scripts**: Pre-built scripts for complex workflows
-- **Cross-platform**: Works with Python 3.12+ on Windows
+- **鼠标控制**：移动、点击、拖拽、滚轮等操作
+- **键盘控制**：输入文本、按键、组合键等
+- **OCR识别**：基于 easyocr，支持模糊匹配，自动定位并点击屏幕文本
+- **输入法检测**：通过 OCR 识别右下角“中/英”状态，自动切换输入法
+- **测试用例驱动**：支持 XML 测试用例批量自动执行
 
-## Installation
+## 安装
 
-### 1. Create Virtual Environment
+1. 创建虚拟环境
+	```bash
+	python -m venv .venv
+	.venv\Scripts\activate
+	```
+2. 安装依赖
+	```bash
+	pip install -r requirements.txt
+	```
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
+## 文件结构
+
+- run_testcase.py         通用测试用例执行器，自动解析并执行 XML 测试步骤
+- ocr_tool.py             OCR工具，支持模糊匹配和区域识别
+- auto_controller.py      鼠标键盘自动化控制器
+- keyboard_controller.py  键盘底层控制
+- mouse_controller.py     鼠标底层控制
+- testcase/               测试用例 XML 文件目录
+- requirements.txt        依赖包列表
+- GUIDE.md                项目文件说明
+- README.md               项目简介与用法
+
+## 快速开始
+
+1. 编写 XML 测试用例（见 testcase/rainbow_main.xml 示例）
+2. 运行自动化脚本：
+	```bash
+	python run_testcase.py testcase/rainbow_main.xml
+	```
+
+## 用例示例
+
+```xml
+<step type="ocr" action="find_and_click" content="Audio" />
 ```
 
-### 2. Install Dependencies
+## 说明
 
-```bash
-pip install -r requirements.txt
-```
-
-## Quick Start
-
-### Basic Usage
-
-```python
-import auto_controller as ac
-import time
-
-# Press Win key to open run dialog
-ac.tap_key('win')
-time.sleep(0.5)
-
-# Type text
+- 输入法检测采用 OCR 识别右下角“中/英”状态，自动切换。
+- OCR 支持模糊匹配，提升识别容错率。
+- 可扩展更多自动化步骤和断言。
 ac.type_text('notepad', interval=0.1)
 time.sleep(0.3)
 

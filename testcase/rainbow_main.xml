@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="rainbow主流程自动化">
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="rainbow" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="mouse" action="move_mouse" content="100,80" />
+        <step type="mouse" action="click" content="left" />
+        <step type="check" action="input_method" content="英语(美国)" />
+        <step type="keyboard" action="type_text" content="wen zhou" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="ocr" action="find_and_click" content="wen zhou" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="ocr" action="find_and_click" content="Call" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="ocr" action="find_and_click" content="Audio" />
+    </testcase>
+</testcases>
