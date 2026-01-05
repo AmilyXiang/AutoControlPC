@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="rainbow主流程自动化">
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="net" />
+        <step type="icon" action="find_and_move" content="png/netease_music.jpg" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="5" />
+        <step type="icon" action="find_and_move" content="png/player.jpg" />
+        <step type="mouse" action="click" content="left" />
+    </testcase>
+</testcases>
