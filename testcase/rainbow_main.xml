@@ -9,10 +9,16 @@
         <step type="check" action="input_method" content="英语(美国)" />
         <step type="keyboard" action="type_text" content="fei sun" />
         <step type="wait" action="sleep" content="1" />
-        <step type="ocr" action="find_and_click" content="fei sun" />
+        <!--step type="ocr" action="find_and_click" content="fei sun" /-->
+        <step type="icon" action="find_and_move" content="png/fei.jpg" />
+        <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
-        <step type="ocr" action="find_and_click" content="Call" />
+        <!--step type="ocr" action="find_and_click" content="Call" /-->
+        <step type="icon" action="find_and_move" content="png/call.jpg" />
+        <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
-        <step type="ocr" action="find_and_click" content="Audio" />
+        <!--step type="ocr" action="find_and_click" content="Audio" /-->
+        <step type="icon" action="find_and_move" content="png/headset_call.jpg" />
+        <step type="mouse" action="click" content="left" />
     </testcase>
 </testcases>

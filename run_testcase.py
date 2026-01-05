@@ -96,6 +96,23 @@ def execute_step(step):
                 # 保存截图
                 screenshot.save(f"ocr_debug_{content}.png")
                 print(f"[OCR] 已保存调试截图: ocr_debug_{content}.png")
+    elif step_type == 'window':
+        if action == 'maximize_top':
+            from window_util import maximize_top_window
+            ok = maximize_top_window()
+            print(f"[WINDOW] 最大化最上层窗口: {'成功' if ok else '失败'}")
+    elif step_type == 'icon':
+        if action == 'find_and_move':
+            from icon_detector import IconDetector
+            from mouse_controller import MouseController
+            detector = IconDetector(threshold=0.6)
+            matches = detector.find_icons(content)
+            if matches:
+                x, y, score = matches[0]
+                print(f"[ICON] 检测到图标，位置=({x},{y}), 置信度={score:.2f}，自动移动鼠标")
+                MouseController().move_to(x, y, duration=0.3)
+            else:
+                print(f"[ICON] 未检测到图标: {content}")
     time.sleep(0.3)
 
 def execute_testcases(xml_path):
@@ -127,3 +144,11 @@ if __name__ == '__main__':
         print(f"未找到指定的xml文件: {xml_file}")
         sys.exit(2)
     execute_testcases(xml_file)
+    # 程序结束后清理所有 debug_match_*.png
+    import glob
+    for f in glob.glob('debug_match_*.png'):
+        try:
+            os.remove(f)
+            print(f"已删除调试图片: {f}")
+        except Exception as e:
+            print(f"删除调试图片失败: {f}, 原因: {e}")
