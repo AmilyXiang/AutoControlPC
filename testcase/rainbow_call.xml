@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
-    <testcase name="rainbow主流程自动化">
+    <testcase name="rainbow——call主流程自动化">
         <step type="keyboard" action="press_key" content="win" />
         <step type="keyboard" action="type_text" content="rainbow" />
         <step type="keyboard" action="press_key" content="enter" />
@@ -10,11 +10,11 @@
         <step type="keyboard" action="type_text" content="fei sun" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="fei sun" /-->
-        <step type="icon" action="find_and_move" content="png/fei.jpg" />
+        <step type="icon" action="find_and_move" content="png/rainbow/fei.jpg" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="Call" /-->
-        <step type="icon" action="find_and_move" content="png/call.jpg" />
+        <step type="icon" action="find_and_move" content="png/rainbow/call.jpg" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="Audio" /-->

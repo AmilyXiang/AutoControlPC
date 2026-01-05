@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="rainbow自动接听">
+        <!-- 等待来电弹窗出现，可根据实际情况调整等待时间 -->
+        <step type="wait" action="sleep" content="5" />
+        <!-- OCR查找并点击“接听”按钮，按钮文字可根据实际界面调整，如“接听”、“Answer”等 -->
+        <step type="icon" action="find_and_move" content="png/rainbow/acceptCall.png" />
+        <step type="mouse" action="click" content="left" />
+    </testcase>
+</testcases>

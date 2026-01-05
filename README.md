@@ -221,6 +221,16 @@ AutoControlPC/
 - Use `duration` parameter in `move_mouse()` for smooth movement
 - Some applications may require delays after moving mouse before clicking
 
+## 录音功能
+
+- **audio_recorder.py**：支持列出所有输入设备（声卡/麦克风），并选择指定设备进行录音，保存为wav文件。
+- 用法示例：
+  - 列出设备：`python audio_recorder.py list`
+  - 录音：`python audio_recorder.py record <设备编号> <时长秒> <输出wav文件>`
+- 依赖 sounddevice、soundfile。
+
+> 多个相同名称的设备是驱动/系统多实例所致，任选一个能录音即可。
+
 ## License
 
 AutoControlPC - Windows PC Automation Library

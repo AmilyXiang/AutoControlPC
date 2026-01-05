@@ -22,3 +22,7 @@ simpleaudio>=1.0.4
 pydub>=0.25.1
 pygame>=2.0.0
 # 音频播放依赖（pydub 需要 ffmpeg，需手动安装到系统PATH）
+
+# 录音支持
+sounddevice>=0.4.6
+soundfile>=0.12.1

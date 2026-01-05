@@ -1,5 +1,3 @@
-
-
 # 项目文件说明（AutoControlPC）
 
 ## 主要自动化脚本
@@ -49,6 +47,16 @@
     - `wait`：等待
     - `window`：窗口操作（如最大化）
     - `icon`：图标检测与自动移动鼠标
+
+## 录音工具
+
+- **audio_recorder.py**
+  - 支持列出所有输入设备（声卡/麦克风），并选择指定设备进行录音，保存为wav文件。
+  - 用法：
+    - `python audio_recorder.py list` 列出所有输入设备
+    - `python audio_recorder.py record <设备编号> <时长秒> <输出wav文件>` 录音
+  - 依赖 sounddevice、soundfile。
+  - 多个相同名称的设备是驱动/系统多实例所致，任选一个能录音即可。
 
 ## 其他
 - **requirements.txt**
