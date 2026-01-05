@@ -8,7 +8,9 @@
 - **键盘控制**：输入文本、按键、组合键等
 - **OCR识别**：基于 easyocr，支持模糊匹配，自动定位并点击屏幕文本
 - **输入法检测**：通过 OCR 识别右下角“中/英”状态，自动切换输入法
-- **测试用例驱动**：支持 XML 测试用例批量自动执行
+- **图标检测**：基于OpenCV模板匹配，支持灰度图精准检测图标并自动移动鼠标
+- **窗口操作**：支持最大化最上层窗口
+- **测试用例驱动**：支持 XML 测试用例批量自动执行，支持自定义多种自动化动作
 
 ## 安装
 
@@ -42,17 +44,30 @@
 	python run_testcase.py testcase/rainbow_main.xml
 	```
 
+
 ## 用例示例
 
 ```xml
+<!-- OCR查找并点击 -->
 <step type="ocr" action="find_and_click" content="Audio" />
+<!-- 输入法检测与切换 -->
+<step type="check" action="input_method" content="英语(美国)" />
+<!-- 最大化最上层窗口 -->
+<step type="window" action="maximize_top" />
+<!-- 图标检测并移动鼠标到第一个匹配位置 -->
+<step type="icon" action="find_and_move" content="png/1.jpg" />
 ```
+
+> 程序结束后会自动清理所有 debug_match_*.png 调试图片。
 
 ## 说明
 
 - 输入法检测采用 OCR 识别右下角“中/英”状态，自动切换。
 - OCR 支持模糊匹配，提升识别容错率。
+- 图标检测采用灰度模板匹配，适合像素级一致的静态图标。
+- 支持窗口最大化等常用窗口操作。
 - 可扩展更多自动化步骤和断言。
+- 所有 debug_match_*.png 调试图片会在自动化流程结束后自动清理。
 ac.type_text('notepad', interval=0.1)
 time.sleep(0.3)
 

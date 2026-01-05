@@ -16,3 +16,9 @@ torch>=1.9.0
 
 # Testing (optional)
 pytest>=7.0.0
+
+# 音频播放支持
+simpleaudio>=1.0.4
+pydub>=0.25.1
+pygame>=2.0.0
+# 音频播放依赖（pydub 需要 ffmpeg，需手动安装到系统PATH）

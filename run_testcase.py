@@ -1,4 +1,3 @@
-
 import xml.etree.ElementTree as ET
 import os
 import time
@@ -32,20 +31,21 @@ def execute_step(step):
                 pyautogui.click()
             elif content == 'right':
                 pyautogui.click(button='right')
+    elif step_type == 'audio':
+        if action == 'play':
+            from audio_player import play_audio
+            ok = play_audio(content)
+            print(f"[AUDIO] 播放音频: {content} {'成功' if ok else '失败'}")
     elif step_type == 'check':
         if action == 'input_method':
-            # OCR识别右下角输入法状态
             from PIL import ImageGrab
             import auto_controller as ac
-            # 获取屏幕尺寸
             screen = ImageGrab.grab()
             w, h = screen.size
-            # 截取右下角区域（如宽200高80像素，可根据实际调整）
             region = screen.crop((w-200, h-80, w, h))
             status = ocr.find_text_position('英', region)
             status_cn = ocr.find_text_position('中', region)
             print(f"[CHECK] OCR识别右下角：'英'={status}, '中'={status_cn}")
-            # 期望为“英语(美国)”时，右下角应为“英”
             need_switch = False
             if content == '英语(美国)':
                 if not status:
@@ -76,7 +76,6 @@ def execute_step(step):
             time.sleep(float(content))
     elif step_type == 'ocr':
         if action == 'find_and_click':
-            # 增加等待，确保界面已刷新
             time.sleep(2)
             from PIL import ImageGrab
             import auto_controller as ac
@@ -88,12 +87,10 @@ def execute_step(step):
                 ac.left_click()
             else:
                 print(f"[OCR] 未找到'{content}'，跳过点击")
-                # 打印所有识别到的文本和置信度
                 print("[OCR] 本次截图所有识别结果：")
                 results = ocr.reader.readtext(np.array(screenshot))
                 for bbox, text, conf in results:
                     print(f"  文本: '{text}'  置信度: {conf:.2f}")
-                # 保存截图
                 screenshot.save(f"ocr_debug_{content}.png")
                 print(f"[OCR] 已保存调试截图: ocr_debug_{content}.png")
     elif step_type == 'window':
