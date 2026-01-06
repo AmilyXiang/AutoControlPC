@@ -1,28 +1,25 @@
-# AutoControlPC Dependencies
+# AutoControlPC Dependencies - Complete Project
 
-# Core mouse and keyboard control
-pynput==1.7.6
+# UI Automation & Control
+pyautogui==0.9.53
 
-# Image processing and screenshots
+# Image Processing & Screenshots
 Pillow>=9.0.0
+numpy>=1.20.0
 opencv-python>=4.5.0
 
-# Numerical operations
-numpy>=1.20.0
+# OCR & Text Recognition
+PaddleOCR==2.8.0.3
 
-# OCR and text recognition
-easyocr>=1.6.0
-torch>=1.9.0
-
-# Testing (optional)
-pytest>=7.0.0
-
-# 音频播放支持
-simpleaudio>=1.0.4
-pydub>=0.25.1
+# Audio Playback & Recording
 pygame>=2.0.0
-# 音频播放依赖（pydub 需要 ffmpeg，需手动安装到系统PATH）
-
-# 录音支持
+pydub>=0.25.1
+simpleaudio>=1.0.4
 sounddevice>=0.4.6
 soundfile>=0.12.1
+
+# Windows Specific Operations
+pywin32>=306
+
+# Optional: Testing
+pytest>=7.0.0

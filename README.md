@@ -1,240 +1,292 @@
-# AutoControlPC
+# AutoControlPC - 多PC自动化测试框架
 
-一个用于 Windows 自动化的 Python 项目，支持鼠标、键盘控制及 OCR 识别，适合批量 UI 自动化测试。
+一个功能强大的 Python 自动化框架，支持多PC协同测试。采用 **P2P（点对点）网络架构**实现两台PC的对等通信，无需中央服务器。支持 UI 自动化、音频操作、网络协调，适合复杂的场景自动化测试（如电话通话模拟、多端同步测试等）。
 
-## 主要功能
+## 核心功能
 
+### UI 自动化
 - **鼠标控制**：移动、点击、拖拽、滚轮等操作
 - **键盘控制**：输入文本、按键、组合键等
-- **OCR识别**：基于 easyocr，支持模糊匹配，自动定位并点击屏幕文本
-- **输入法检测**：通过 OCR 识别右下角“中/英”状态，自动切换输入法
-- **图标检测**：基于OpenCV模板匹配，支持灰度图精准检测图标并自动移动鼠标
-- **窗口操作**：支持最大化最上层窗口
-- **测试用例驱动**：支持 XML 测试用例批量自动执行，支持自定义多种自动化动作
+- **窗口操作**：最大化、置顶、查询窗口信息
+- **OCR识别**：基于 PaddleOCR，自动定位并点击屏幕文本
+- **图标检测**：基于OpenCV模板匹配，精准检测图标并交互
 
-## 安装
+### 音频操作
+- **多设备播放**：支持指定声卡设备播放音频（同步/异步）
+- **多设备录音**：支持指定声卡设备录音
+- **同步音频**：两台PC同时播放和录音，支持跨PC音频转接
 
-1. 创建虚拟环境
-	```bash
-	python -m venv .venv
-	.venv\Scripts\activate
-	```
-2. 安装依赖
-	```bash
-	pip install -r requirements.txt
-	```
+### 网络协调（P2P）
+- **对等通信**：两台PC双向通信，无中央服务器
+- **事件驱动**：基于 NetworkEvent 枚举的类型安全事件系统
+- **自动重连**：网络中断时自动重新连接
+- **消息队列**：线程安全的异步消息处理
 
-## 文件结构
-
-- run_testcase.py         通用测试用例执行器，自动解析并执行 XML 测试步骤
-- ocr_tool.py             OCR工具，支持模糊匹配和区域识别
-- auto_controller.py      鼠标键盘自动化控制器
-- keyboard_controller.py  键盘底层控制
-- mouse_controller.py     鼠标底层控制
-- testcase/               测试用例 XML 文件目录
-- requirements.txt        依赖包列表
-- GUIDE.md                项目文件说明
-- README.md               项目简介与用法
+### XML驱动测试
+- **声明式用例**：XML格式定义测试步骤
+- **多种操作**：键盘、鼠标、音频、网络、窗口、OCR、图标、延时
+- **灵活配置**：设备选择、超时设置、数据传递
 
 ## 快速开始
 
-1. 编写 XML 测试用例（见 testcase/rainbow_main.xml 示例）
-2. 运行自动化脚本：
-	```bash
-	python run_testcase.py testcase/rainbow_main.xml
-	```
-
-
-## 用例示例
-
-```xml
-<!-- OCR查找并点击 -->
-<step type="ocr" action="find_and_click" content="Audio" />
-<!-- 输入法检测与切换 -->
-<step type="check" action="input_method" content="英语(美国)" />
-<!-- 最大化最上层窗口 -->
-<step type="window" action="maximize_top" />
-<!-- 图标检测并移动鼠标到第一个匹配位置 -->
-<step type="icon" action="find_and_move" content="png/1.jpg" />
-```
-
-> 程序结束后会自动清理所有 debug_match_*.png 调试图片。
-
-## 说明
-
-- 输入法检测采用 OCR 识别右下角“中/英”状态，自动切换。
-- OCR 支持模糊匹配，提升识别容错率。
-- 图标检测采用灰度模板匹配，适合像素级一致的静态图标。
-- 支持窗口最大化等常用窗口操作。
-- 可扩展更多自动化步骤和断言。
-- 所有 debug_match_*.png 调试图片会在自动化流程结束后自动清理。
-ac.type_text('notepad', interval=0.1)
-time.sleep(0.3)
-
-# Press Enter
-ac.tap_key('enter')
-time.sleep(1)
-
-# Move mouse and click
-ac.move_mouse(500, 400, duration=0.5)
-time.sleep(0.2)
-ac.left_click()
-
-# Type some text
-ac.type_text('Hello AutoControlPC!', interval=0.05)
-```
-
-### OCR-Based Automation
-
-The library includes advanced OCR capabilities to find and interact with UI elements:
-
-```python
-from PIL import ImageGrab
-import auto_controller as ac
-import easyocr
-
-# Take screenshot
-screenshot = ImageGrab.grab()
-
-# Find text position using OCR
-# (See run_rainbow_ocr.py for complete example)
-```
-
-## Core Modules
-
-### auto_controller.py
-Main API providing simplified functions:
-- `move_mouse(x, y, duration=0)` - Move mouse to coordinates
-- `left_click(duration=0)` - Click left mouse button
-- `type_text(text, interval=0.05)` - Type text with delays between characters
-- `key_combination(keys)` - Press key combinations (e.g., 'ctrl+c')
-- `tap_key(key)` - Tap a single key
-- `get_mouse_position()` - Get current mouse position
-- `scroll_mouse(clicks, direction='down')` - Scroll mouse wheel
-
-### mouse_controller.py
-Low-level mouse operations via `MouseController` class
-
-### keyboard_controller.py
-Keyboard operations with support for 50+ special keys:
-- Function keys (F1-F12)
-- Modifiers (Shift, Ctrl, Alt, Win)
-- Navigation (Up, Down, Left, Right, Enter, etc.)
-
-### advanced_features.py
-Advanced features:
-- Action recording and playback
-- Script building utilities
-
-## Example Scripts
-
-### run_rainbow_ocr.py
-Automated workflow demonstrating:
-1. Launch Rainbow application via Win+R
-2. Input text "cui ji"
-3. Find "Cui Ji" button using OCR
-4. Click the button
-5. Find and click "Call" button
-6. Find and click "Audio" button
-
-Run with:
+### 1. 安装依赖
 ```bash
-python run_rainbow_ocr.py
+# 创建虚拟环境
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+
+# 安装依赖
+pip install -r requirements.txt
 ```
 
-## Requirements
+> **Windows 注意**：pywin32 安装后需要运行：
+> ```bash
+> python -m pywin32_postinstall -install
+> ```
 
-- Python 3.12+
-- Windows OS
-- pynput 1.7.6
-- opencv-python
-- Pillow (PIL)
-- numpy
-- easyocr
-- torch (dependency of easyocr)
+### 2. 运行第一个测试（5分钟）
 
-See `requirements.txt` for complete list.
+查看 [QUICK_START.md](QUICK_START.md) 了解详细的入门教程。
 
-## Key Features
-
-### Mouse Operations
-- Smooth movement with configurable duration
-- Left/right click, double-click
-- Drag operations
-- Scroll wheel support
-- Position querying
-
-### Keyboard Operations
-- Text input with inter-character delays (prevents typing too fast)
-- Single key taps
-- Key combinations (Ctrl+C, Alt+Tab, Win+D, etc.)
-- Special key support (50+ keys)
-
-### OCR Integration
-- Find text on screen using EasyOCR
-- Case-sensitive and case-insensitive matching
-- Partial text matching
-- Automatic center coordinate calculation
-- Multiple matching strategies
-
-## Testing
-
-Run tests with:
+最简单的例子：单机P2P测试
 ```bash
-python test.py
+python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send
 ```
 
-## File Structure
+### 3. 配置两PC场景
+
+详见 [P2P_NETWORK_GUIDE.md](P2P_NETWORK_GUIDE.md)：
+1. 获取两台PC的IP地址：`ipconfig` 或 `ifconfig`
+2. 分别运行两个测试，配置正确的对端IP和端口
+3. 网络事件会自动同步
+
+## 安装验证
+
+查看 [PROJECT_SETUP.md](PROJECT_SETUP.md) 获取详细的安装检查清单和故障排除指南。
+
+## 项目结构
 
 ```
 AutoControlPC/
-├── auto_controller.py          # Main API
-├── mouse_controller.py          # Mouse operations
-├── keyboard_controller.py       # Keyboard operations
-├── advanced_features.py         # Advanced features
-├── run_rainbow_ocr.py          # Example automation script
-├── test.py                      # Test suite
-├── requirements.txt             # Dependencies
-└── README.md                    # This file
+├── run_testcase.py              # XML测试用例执行引擎
+├── network_event.py              # P2P网络事件定义
+├── p2p_network.py                # P2P网络通信实现
+├── p2p_testcase_coordinator.py   # 多PC测试协调器
+├── auto_controller.py            # UI自动化核心
+├── keyboard_controller.py        # 键盘控制
+├── mouse_controller.py           # 鼠标控制
+├── audio_player.py               # 音频播放（支持多设备）
+├── audio_recorder.py             # 音频录音（支持多设备）
+├── ocr_tool.py                   # OCR文本识别
+├── icon_detector.py              # 图标检测
+├── window_util.py                # 窗口操作
+├── input_method_util.py          # 输入法检测
+├── testcase/                     # 测试用例目录
+│   ├── netease_music.xml         # 音乐播放测试
+│   └── p2p_network_demo.xml      # P2P通信测试
+├── png/                          # 图标素材目录
+├── QUICK_START.md                # 快速开始教程
+├── INSTALL.md                    # 安装检查清单
+├── P2P_NETWORK_GUIDE.md          # P2P详细文档
+├── requirements.txt              # Python依赖
+├── setup.py                      # 包配置文件
+└── README.md                     # 本文件
 ```
 
-## Usage Tips
+## XML测试用例示例
 
-1. **Timing**: Add `time.sleep()` delays between operations to allow UI to respond
-2. **Focus**: Click on the target window first to ensure it has focus
-3. **OCR**: First-run OCR initialization downloads models (~100MB), takes 30-60 seconds
-4. **Coordinates**: Use `mouse_tracker.py` equivalent to find target coordinates
-5. **Errors**: Catch KeyboardInterrupt to allow stopping long-running scripts
+### 1. 音频操作（多设备）
+```xml
+<testcase name="AudioTest" description="多设备同时播放和录音">
+    <!-- 播放音频到设备0 -->
+    <step type="audio" action="play" content="audio/sound.wav" device="0" />
+    
+    <!-- 异步播放到设备1 -->
+    <step type="audio" action="play_async" content="audio/music.wav" device="1" />
+    
+    <!-- 从设备24录音10秒 -->
+    <step type="audio" action="record" content="output/record.wav" 
+          device="24" duration="10" />
+    
+    <!-- 等待1秒 -->
+    <step type="wait" content="1" />
+</testcase>
+```
 
-## Troubleshooting
+### 2. P2P网络通信
+```xml
+<!-- PC-A：发起通话 -->
+<testcase name="P2P_Caller" description="发起端">
+    <!-- 初始化P2P，连接到PC-B (192.168.1.102:9998) -->
+    <step type="network" action="init" content="192.168.1.102:9998" 
+          local_port="9998" />
+    
+    <!-- 发送"准备就绪"事件 -->
+    <step type="network" action="send" content="ready" 
+          data="{&quot;status&quot;: &quot;online&quot;}" />
+    
+    <!-- 发送"发起通话"事件 -->
+    <step type="network" action="send" content="call_start" 
+          data="{&quot;caller&quot;: &quot;Alice&quot;}" />
+    
+    <!-- 等待对端"接听"事件（超时30秒） -->
+    <step type="network" action="receive" content="call_answer" 
+          timeout="30" />
+    
+    <!-- 关闭网络连接 -->
+    <step type="network" action="stop" content="" />
+</testcase>
 
-### OCR Model Download
-- First-run OCR may take 30-60 seconds as it downloads models
-- Models are cached after first run for faster subsequent execution
+<!-- PC-B：接听通话 -->
+<testcase name="P2P_Receiver" description="接听端">
+    <!-- 初始化P2P，监听本地9999端口，不主动连接 -->
+    <step type="network" action="init" content="" local_port="9999" />
+    
+    <!-- 等待"准备就绪"事件 -->
+    <step type="network" action="receive" content="ready" timeout="30" />
+    
+    <!-- 等待"发起通话"事件 -->
+    <step type="network" action="receive" content="call_start" timeout="30" />
+    
+    <!-- 发送"接听"事件 -->
+    <step type="network" action="send" content="call_answer" 
+          data="{&quot;receiver&quot;: &quot;Bob&quot;}" />
+    
+    <!-- 关闭网络连接 -->
+    <step type="network" action="stop" content="" />
+</testcase>
+```
 
-### Keyboard Input Issues
-- Ensure target application has focus
-- Use longer delays between key presses for slow applications
-- Some applications may require special handling
+### 3. UI自动化
+```xml
+<testcase name="UITest" description="UI操作示例">
+    <!-- 点击坐标(100,100) -->
+    <step type="mouse" action="click" x="100" y="100" />
+    
+    <!-- 输入文本 -->
+    <step type="keyboard" action="input" content="Hello World" />
+    
+    <!-- OCR查找并点击 -->
+    <step type="ocr" action="find_and_click" content="确定" />
+    
+    <!-- 最大化顶部窗口 -->
+    <step type="window" action="maximize_top" />
+    
+    <!-- 图标检测 -->
+    <step type="icon" action="find_and_move" content="png/button.jpg" />
+    
+    <!-- 等待2秒 -->
+    <step type="wait" content="2" />
+</testcase>
+```
 
-### Mouse Precision
-- Use `duration` parameter in `move_mouse()` for smooth movement
-- Some applications may require delays after moving mouse before clicking
+## 支持的操作类型
 
-## 录音功能
+| 操作类型 | 动作 | 说明 |
+|---------|-----|------|
+| keyboard | input | 输入文本 |
+| keyboard | key | 按下单个按键 |
+| mouse | click | 点击 (支持left/right/double) |
+| mouse | move | 移动鼠标 |
+| mouse | drag | 拖拽 |
+| mouse | scroll | 滚动 |
+| audio | play | 同步播放音频 |
+| audio | play_async | 异步播放音频 |
+| audio | record | 录音 |
+| network | init | 初始化P2P连接 |
+| network | send | 发送网络事件 |
+| network | receive | 接收网络事件 |
+| network | stop | 停止网络连接 |
+| ocr | find_and_click | OCR定位并点击 |
+| icon | find_and_move | 图标检测并移动鼠标 |
+| window | maximize_top | 最大化顶部窗口 |
+| wait | - | 延时等待 |
 
-- **audio_recorder.py**：支持列出所有输入设备（声卡/麦克风），并选择指定设备进行录音，保存为wav文件。
-- 用法示例：
-  - 列出设备：`python audio_recorder.py list`
-  - 录音：`python audio_recorder.py record <设备编号> <时长秒> <输出wav文件>`
-- 依赖 sounddevice、soundfile。
+## 网络事件类型
 
-> 多个相同名称的设备是驱动/系统多实例所致，任选一个能录音即可。
+P2P通信支持的预定义事件（可扩展）：
 
-## License
+```python
+class NetworkEvent(Enum):
+    INIT = "init"              # 连接初始化
+    STOP = "stop"              # 停止连接
+    READY = "ready"            # 就绪信号
+    CALL_START = "call_start"  # 发起通话
+    CALL_ANSWER = "call_answer"# 接听通话
+    CALL_END = "call_end"      # 通话结束
+    AUDIO_START = "audio_start"# 音频开始
+    AUDIO_STOP = "audio_stop"  # 音频停止
+    VIDEO_START = "video_start"# 视频开始
+    VIDEO_STOP = "video_stop"  # 视频停止
+    MESSAGE = "message"        # 自定义消息
+    DATA = "data"              # 数据传输
+    CUSTOM = "custom"          # 用户自定义
+```
 
-AutoControlPC - Windows PC Automation Library
+## 使用场景
 
-## Author
+### 场景1：单机P2P通信测试
+在一台PC上同时运行两个进程，测试P2P双向通信：
+```bash
+# 此测试自动在单个进程内完成收发
+python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send
+```
 
-Developed for automated testing and task automation on Windows platforms.
+### 场景2：两PC电话模拟
+- PC-A（主叫方）：发送CALL_START，等待CALL_ANSWER
+- PC-B（被叫方）：等待CALL_START，发送CALL_ANSWER
+- 配合音频设备实现模拟通话
+
+### 场景3：多设备音频转接
+- PC-A播放到设备0，同时录音从设备24
+- PC-B播放到设备1，同时录音从设备25
+- 物理连接设备形成音频环路进行跨PC测试
+
+## 常见问题
+
+**Q：如何找到我的音频设备ID？**
+A：运行以下命令查看所有音频设备：
+```python
+import sounddevice as sd
+print(sd.query_devices())
+```
+找到你的设备并注意其ID号（通常是0-31之间的整数）。
+
+**Q：网络连接失败怎么办？**
+A：检查以下项目：
+1. 两台PC在同一网络上
+2. 防火墙未阻止Python程序
+3. 确认对端IP地址正确：`ipconfig` 查看IPv4地址
+4. 确认端口号未被占用
+
+**Q：如何在Windows上安装PyAudio依赖？**
+A：某些音频库需要额外配置。查看 [PROJECT_SETUP.md](PROJECT_SETUP.md) 的Windows特定步骤。
+
+**Q：如何自定义网络事件？**
+A：在 `network_event.py` 中的 NetworkEvent 枚举类中添加新事件，然后在XML中使用。
+
+## 文档
+
+- [QUICK_START.md](QUICK_START.md) - 5分钟快速上手
+- [PROJECT_SETUP.md](PROJECT_SETUP.md) - 安装配置和故障排除
+- [P2P_NETWORK_GUIDE.md](P2P_NETWORK_GUIDE.md) - P2P网络详细文档
+- [GUIDE.md](GUIDE.md) - 模块参考
+
+## 系统要求
+
+- Python 3.8+
+- Windows 7+ / Linux / macOS
+- 网络连通（两PC场景）
+- 足够的系统权限（某些OCR和图标检测需要）
+
+## 许可证
+
+MIT
+
+## 支持
+
+遇到问题？
+1. 查看相应文档
+2. 检查示例testcase文件
+3. 查看控制台错误输出
+4. 参考 [PROJECT_SETUP.md](PROJECT_SETUP.md) 的常见问题部分

@@ -13,6 +13,10 @@ import numpy as np
 from ocr_tool import OcrTool
 ocr = OcrTool(['en', 'ch_sim'], gpu=False)
 
+# P2P网络支持
+from p2p_network import get_network, init_network, stop_network
+from network_event import NetworkEvent, EVENTS
+
 def execute_step(step):
     step_type = step.get('type')
     action = step.get('action')
@@ -64,6 +68,59 @@ def execute_step(step):
             thread = threading.Thread(target=record_audio, args=(device_idx, duration, output_file), daemon=True)
             thread.start()
             print(f"[AUDIO] 异步录音开始，设备: {device_idx}，时长: {duration}s，输出: {output_file}")
+    elif step_type == 'network':
+        if action == 'init':
+            # network init: 初始化网络连接
+            # content: peer_host:peer_port (例如: 192.168.1.101:9998)
+            # 属性: local_port (本地监听端口，默认9998)
+            local_port = int(step.get('local_port', 9998))
+            
+            if content and ':' in content:
+                parts = content.split(':')
+                peer_host = parts[0]
+                peer_port = int(parts[1])
+                print(f"[NETWORK] 初始化网络: 本地端口={local_port}, 对端={peer_host}:{peer_port}")
+                init_network(local_port, peer_host, peer_port)
+            else:
+                print(f"[NETWORK] 初始化网络: 本地端口={local_port}（仅启动服务器）")
+                init_network(local_port=local_port)
+        
+        elif action == 'send':
+            # network send: 发送消息
+            # content: 事件名称 (例如: call_start)
+            # 属性: data (消息数据，JSON格式，可选)
+            event_name = content
+            data_str = step.get('data', '{}')
+            
+            try:
+                import json
+                data = json.loads(data_str)
+            except:
+                data = {'message': data_str}
+            
+            network = get_network()
+            success = network.send(event_name, data)
+            print(f"[NETWORK] 发送消息: {event_name}, 成功={success}")
+        
+        elif action == 'receive':
+            # network receive: 接收消息（阻塞）
+            # content: 事件名称 (例如: call_answer)，为空表示接收任何事件
+            # 属性: timeout (等待超时秒数，默认30)
+            event_name = content if content else None
+            timeout = float(step.get('timeout', 30))
+            
+            network = get_network()
+            message = network.receive(event_name, timeout)
+            
+            if message:
+                print(f"[NETWORK] 接收成功: {message}")
+            else:
+                print(f"[NETWORK] 接收超时: 事件={event_name}, 超时={timeout}秒")
+        
+        elif action == 'stop':
+            # network stop: 停止网络连接
+            print(f"[NETWORK] 停止网络连接")
+            stop_network()
     elif step_type == 'check':
         if action == 'input_method':
             from PIL import ImageGrab

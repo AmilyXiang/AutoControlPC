@@ -6,6 +6,7 @@
         <step type="icon" action="find_and_move" content="png/NeteaseMusic/netease_music.jpg" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="5" />
+        <step type="window" action="maximize_top" content="" /> 
         <step type="icon" action="find_and_move" content="png/NeteaseMusic/player.jpg" />
         <step type="mouse" action="click" content="left" />
         <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_1.wav" device="24" duration="30" />
