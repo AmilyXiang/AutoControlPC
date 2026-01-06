@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="同时放音和录音测试">
+        <!-- 同时进行异步播放和异步录音 -->
+        <step type="wait" action="sleep" content="1" />
+        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="25" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_1.wav" device="24" duration="30" />
+        <step type="wait" action="sleep" content="6" />
+        
+        <!-- 第二轮 -->
+        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="25" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_2.wav" device="24" duration="30" />
+        <step type="wait" action="sleep" content="6" />
+    </testcase>
+</testcases>

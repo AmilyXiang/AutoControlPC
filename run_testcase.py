@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import os
 import time
+import threading
 
 
 import pyautogui
@@ -34,8 +35,35 @@ def execute_step(step):
     elif step_type == 'audio':
         if action == 'play':
             from audio_player import play_audio
-            ok = play_audio(content)
+            device_idx = int(step.get('device', -1))
+            device_arg = device_idx if device_idx >= 0 else None
+            ok = play_audio(content, device_arg)
             print(f"[AUDIO] 播放音频: {content} {'成功' if ok else '失败'}")
+        elif action == 'play_async':
+            # 异步播放，不阻塞后续步骤
+            from audio_player import play_audio
+            device_idx = int(step.get('device', -1))
+            device_arg = device_idx if device_idx >= 0 else None
+            thread = threading.Thread(target=play_audio, args=(content, device_arg), daemon=True)
+            thread.start()
+            print(f"[AUDIO] 异步播放音频: {content}，设备: {device_idx if device_idx >= 0 else '默认'}")
+        elif action == 'record':
+            # 同步录音
+            from audio_recorder import record_audio
+            device_idx = int(step.get('device', 0))
+            duration = float(step.get('duration', 5))
+            output_file = content
+            record_audio(device_idx, duration, output_file)
+            print(f"[AUDIO] 录音完成: {output_file}")
+        elif action == 'record_async':
+            # 异步录音，不阻塞后续步骤
+            from audio_recorder import record_audio
+            device_idx = int(step.get('device', 0))
+            duration = float(step.get('duration', 5))
+            output_file = content
+            thread = threading.Thread(target=record_audio, args=(device_idx, duration, output_file), daemon=True)
+            thread.start()
+            print(f"[AUDIO] 异步录音开始，设备: {device_idx}，时长: {duration}s，输出: {output_file}")
     elif step_type == 'check':
         if action == 'input_method':
             from PIL import ImageGrab

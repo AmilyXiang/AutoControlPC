@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="多设备同时放音和录音测试">
+        <!-- 在第一个声卡上同时播放和录音 -->
+        <step type="wait" action="sleep" content="1" />
+        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_device_0_1.wav" device="0" duration="5" />
+        <step type="wait" action="sleep" content="6" />
+        
+        <!-- 在第二个声卡上同时播放和录音（如果存在）或使用默认设备 -->
+        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="1" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_device_1_1.wav" device="1" duration="5" />
+        <step type="wait" action="sleep" content="6" />
+        
+        <!-- 再次使用第一个声卡 -->
+        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_device_0_2.wav" device="0" duration="5" />
+        <step type="wait" action="sleep" content="6" />
+    </testcase>
+</testcases>

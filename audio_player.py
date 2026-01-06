@@ -20,7 +20,7 @@ try:
 except ImportError:
     pygame = None
 
-def play_audio(file_path):
+def play_audio(file_path, device_id=None):
     ext = os.path.splitext(file_path)[1].lower()
     # 播放前检测文件可读性
     if not os.path.isfile(file_path):
@@ -38,7 +38,7 @@ def play_audio(file_path):
             return True
         except Exception as e:
             print(f"[AUDIO] simpleaudio 播放失败: {e}")
-    # 其次用 pygame 播放 mp3/wav
+    # 其次用 pygame 播放 mp3/wav（支持设备指定）
     if pygame:
         try:
             pygame.mixer.init()
@@ -64,7 +64,15 @@ def play_audio(file_path):
     return False
 
 if __name__ == '__main__':
+    device_id = None
+    file_path = None
+    
     if len(sys.argv) < 2:
-        print("用法: python audio_player.py <audio文件路径>")
+        print("用法: python audio_player.py <audio文件路径> [设备ID]")
         sys.exit(1)
-    play_audio(sys.argv[1])
+    
+    file_path = sys.argv[1]
+    if len(sys.argv) >= 3:
+        device_id = int(sys.argv[2])
+    
+    play_audio(file_path, device_id)
