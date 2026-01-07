@@ -13,18 +13,18 @@
 
 所有网络通信都基于**事件**，统一定义在 `network_event.py` 中：
 
-| 事件 | 说明 | 示例 |
-|------|------|------|
-| `init` | 初始化网络 | XML中使用 `network init` |
-| `stop` | 停止网络 | XML中使用 `network stop` |
-| `ready` | 就绪信号 | 表示已准备好 |
-| `call_start` | 开始呼叫 | Call端发送 |
-| `call_ringing` | 来电铃声 | Answer端收到 |
-| `call_answer` | 接听电话 | Answer端发送 |
-| `call_end` | 结束通话 | 任意端发送 |
-| `audio_start` | 开始音频 | 音频操作 |
-| `message` | 通用消息 | 自定义消息 |
-| `data` | 通用数据 | 自定义数据 |
+```python
+INIT = "init"
+STOP = "stop"
+READY = "ready"
+CALL_START = "call_start"
+CALL_ANSWER = "call_answer"
+CALL_END = "call_end"
+AUDIO_START = "audio_start"
+AUDIO_STOP = "audio_stop"
+MESSAGE = "message"
+DATA = "data"
+```
 
 ## XML中使用网络
 
@@ -48,14 +48,18 @@
 
 #### network init
 ```xml
+<!-- 主动连接到对端 -->
 <step type="network" action="init" content="192.168.1.101:9998" local_port="9998" />
+
+<!-- 只监听，等待对端连接 -->
+<step type="network" action="init" content="" local_port="9998" />
 ```
 - `content`: 对端地址和端口 (格式: `ip:port`)，为空时仅启动本地服务器
 - `local_port`: 本地监听端口（默认9998）
 
 #### network send
 ```xml
-<step type="network" action="send" content="call_start" data="{&quot;from&quot;: &quot;pc1&quot;}" />
+<step type="network" action="send" content="call_start" data="{&quot;phone&quot;: &quot;188xx&quot;}" />
 ```
 - `content`: 事件名称
 - `data`: JSON格式的数据（可选）
@@ -64,213 +68,219 @@
 ```xml
 <step type="network" action="receive" content="call_answer" timeout="30" />
 ```
-- `content`: 等待的事件名称（为空表示接收任何事件）
+- `content`: 等待的事件名称
 - `timeout`: 等待超时时间（秒，默认30）
 
 #### network stop
 ```xml
 <step type="network" action="stop" content="" />
 ```
-- 无需参数
 
 ## 快速开始
 
-### 步骤1：启动两个PC的remote_executor服务器
+### 单机P2P测试（推荐首选）
 
-**PC-1：**
-```bash
-python remote_executor.py
-```
-
-**PC-2：**
-```bash
-python remote_executor.py
-```
-
-### 步骤2：同步运行Call和Answer流程
+无需两台PC，直接测试网络功能：
 
 ```bash
-python p2p_testcase_coordinator.py \
-  127.0.0.1 9999 \
-  192.168.1.101 9999 \
-  testcase/p2p_network_demo.xml "Call端流程" \
-  testcase/p2p_network_demo.xml "Answer端流程"
+python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send
 ```
 
-## 执行流程示意
+### 两PC实际测试
 
-### Call端（PC-1）和Answer端（PC-2）
+#### PC-A（主叫方）
 
-```
-时间线：
-
-t0:  PC-1 init network (连接到PC-2:9998)
-     PC-2 init network (监听9998，等待连接)
-
-t1:  PC-2 send "ready"
-     PC-1 receive "ready" 
-
-t2:  PC-1 execute call UI
-     PC-1 send "call_start" 
-     
-t3:  PC-2 receive "call_start"
-     PC-2 execute answer UI
-     PC-2 send "call_answer"
-
-t4:  PC-1 receive "call_answer"
-     PC-1和PC-2同时进行音频播放和录音
-
-t5:  PC-1 send "call_end"
-     PC-2 receive "call_end"
-
-t6:  两端都 network stop
-```
-
-## 实际应用示例
-
-### 完整的Call/Answer场景
-
-**testcase/p2p_call_answer.xml:**
+编辑 `testcase/pc_a_call.xml`：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
-    <!-- Call端 -->
-    <testcase name="Call端">
-        <!-- 1. 初始化网络，连接到Answer端 -->
-        <step type="network" action="init" content="192.168.1.101:9998" local_port="9998" />
-        <step type="wait" action="sleep" content="2" />
+    <testcase name="Call">
+        <!-- 连接到PC-B -->
+        <step type="network" action="init" content="192.168.1.102:9998" local_port="9998" />
+        <step type="wait" content="1" />
         
-        <!-- 2. 等待Answer端就绪 -->
-        <step type="network" action="receive" content="ready" timeout="10" />
+        <!-- 发送准备就绪 -->
+        <step type="network" action="send" content="ready" data="{&quot;status&quot;: &quot;online&quot;}" />
         
-        <!-- 3. 执行拨号UI -->
-        <step type="keyboard" action="type_text" content="1881234567" />
-        <step type="keyboard" action="press_key" content="enter" />
-        <step type="wait" action="sleep" content="1" />
+        <!-- 发送通话请求 -->
+        <step type="network" action="send" content="call_start" data="{&quot;caller&quot;: &quot;PC-A&quot;}" />
         
-        <!-- 4. 发送call信号 -->
-        <step type="network" action="send" content="call_start" data="{&quot;phone&quot;: &quot;1881234567&quot;}" />
-        
-        <!-- 5. 等待Answer端接听 -->
+        <!-- 等待接听 -->
         <step type="network" action="receive" content="call_answer" timeout="30" />
         
-        <!-- 6. 执行通话（播放+录音） -->
-        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
-        <step type="audio" action="record_async" content="testAudioFile/call_recorded.wav" device="0" duration="10" />
-        <step type="wait" action="sleep" content="11" />
+        <!-- 播放音频 -->
+        <step type="audio" action="play" content="testAudioFile/test.wav" device="0" />
         
-        <!-- 7. 发送挂断信号 -->
-        <step type="network" action="send" content="call_end" data="{&quot;duration&quot;: 10}" />
+        <!-- 发送结束信号 -->
+        <step type="network" action="send" content="call_end" />
         
-        <!-- 8. 停止网络 -->
-        <step type="network" action="stop" content="" />
-    </testcase>
-    
-    <!-- Answer端 -->
-    <testcase name="Answer端">
-        <!-- 1. 初始化网络（仅启动服务器） -->
-        <step type="network" action="init" content="" local_port="9998" />
-        <step type="wait" action="sleep" content="1" />
-        
-        <!-- 2. 发送就绪信号 -->
-        <step type="network" action="send" content="ready" />
-        
-        <!-- 3. 等待来电 -->
-        <step type="network" action="receive" content="call_start" timeout="30" />
-        
-        <!-- 4. 执行接听UI -->
-        <step type="keyboard" action="press_key" content="enter" />
-        <step type="wait" action="sleep" content="1" />
-        
-        <!-- 5. 发送接听信号 -->
-        <step type="network" action="send" content="call_answer" data="{&quot;status&quot;: &quot;answered&quot;}" />
-        
-        <!-- 6. 执行通话（播放+录音） -->
-        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
-        <step type="audio" action="record_async" content="testAudioFile/answer_recorded.wav" device="24" duration="10" />
-        <step type="wait" action="sleep" content="11" />
-        
-        <!-- 7. 等待Call端挂断 -->
-        <step type="network" action="receive" content="call_end" timeout="30" />
-        
-        <!-- 8. 停止网络 -->
+        <!-- 停止网络 -->
         <step type="network" action="stop" content="" />
     </testcase>
 </testcases>
 ```
 
-**运行命令：**
+运行：
 ```bash
-python p2p_testcase_coordinator.py \
-  127.0.0.1 9999 \
-  192.168.1.101 9999 \
-  testcase/p2p_call_answer.xml "Call端" \
-  testcase/p2p_call_answer.xml "Answer端"
+python run_testcase.py testcase/pc_a_call.xml Call
 ```
 
-## 网络拓扑
+#### PC-B（被叫方）
 
+编辑 `testcase/pc_b_answer.xml`：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="Answer">
+        <!-- 监听本地端口，等待连接 -->
+        <step type="network" action="init" content="" local_port="9998" />
+        
+        <!-- 等待就绪信号 -->
+        <step type="network" action="receive" content="ready" timeout="30" />
+        
+        <!-- 等待通话请求 -->
+        <step type="network" action="receive" content="call_start" timeout="30" />
+        
+        <!-- 发送接听 -->
+        <step type="network" action="send" content="call_answer" data="{&quot;receiver&quot;: &quot;PC-B&quot;}" />
+        
+        <!-- 播放音频 -->
+        <step type="audio" action="play" content="testAudioFile/test.wav" device="0" />
+        
+        <!-- 等待结束信号 -->
+        <step type="network" action="receive" content="call_end" timeout="30" />
+        
+        <!-- 停止网络 -->
+        <step type="network" action="stop" content="" />
+    </testcase>
+</testcases>
 ```
-┌─────────────────┐
-│     PC-1        │
-│ port: 9998      │  ← remote_executor.py
-│ (Call端)        │  ← p2p_network服务器+客户端
-└─────────────────┘
-         ↔ P2P通信
-         ↔ (TCP双向)
-         ↔
-┌─────────────────┐
-│     PC-2        │
-│ port: 9998      │  ← remote_executor.py
-│ (Answer端)      │  ← p2p_network服务器+客户端
-└─────────────────┘
-```
 
-## 调试技巧
-
-### 查看可用事件
+运行：
 ```bash
-python network_event.py
+python run_testcase.py testcase/pc_b_answer.xml Answer
 ```
 
-### 测试P2P网络连接
-```bash
-# PC-1启动接收端
-python p2p_network.py receiver 9998
+## 执行流程
 
-# PC-2启动发送端
-python p2p_network.py sender 192.168.1.100 9998 9999
+```
+时间线：
+
+t0:  PC-B 运行 init "" 9998 → 启动服务器，等待连接
+     PC-A 运行 init "192.168.1.102:9998" 9998 → 连接到PC-B
+
+t1:  PC-A send "ready"
+     PC-B receive "ready" ✓
+
+t2:  PC-A send "call_start"
+     PC-B receive "call_start" ✓
+
+t3:  PC-B send "call_answer"
+     PC-A receive "call_answer" ✓
+
+t4:  PC-A 和 PC-B 同时播放音频
+
+t5:  PC-A send "call_end"
+     PC-B receive "call_end" ✓
+
+t6:  双方停止网络连接
 ```
 
-### 查看网络连接
+## 常见场景
+
+### 场景1：简单消息通信
+
+PC-A → PC-B
+
+```xml
+<!-- PC-A -->
+<step type="network" action="init" content="192.168.1.102:9998" local_port="9998" />
+<step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello&quot;}" />
+<step type="network" action="receive" content="message" timeout="10" />
+<step type="network" action="stop" content="" />
+
+<!-- PC-B -->
+<step type="network" action="init" content="" local_port="9998" />
+<step type="network" action="receive" content="message" timeout="30" />
+<step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hi&quot;}" />
+<step type="network" action="stop" content="" />
+```
+
+### 场景2：多消息同步
+
+```xml
+<!-- PC-A -->
+<step type="network" action="send" content="ready" />
+<step type="network" action="send" content="start" />
+<step type="network" action="receive" content="ready" />
+<step type="network" action="receive" content="start" />
+
+<!-- PC-B -->
+<step type="network" action="receive" content="ready" />
+<step type="network" action="receive" content="start" />
+<step type="network" action="send" content="ready" />
+<step type="network" action="send" content="start" />
+```
+
+## 故障排查
+
+### 网络连接失败
+
+检查：
+1. 两台PC是否在同一网络
+2. 防火墙是否阻止了Python
+3. IP地址和端口是否正确
+
 ```bash
-# Windows
+# Windows查看开放的端口
 netstat -ano | findstr :9998
 
-# Linux
+# Linux查看开放的端口
 netstat -tlnp | grep 9998
+```
+
+### 消息接收超时
+
+检查：
+1. 对端是否已启动
+2. 事件名称是否一致
+3. 网络连接是否正常
+
+### 端口已被占用
+
+改用其他端口：
+
+```xml
+<step type="network" action="init" content="192.168.1.102:8888" local_port="8888" />
 ```
 
 ## 常见问题
 
-**Q: 如何添加自定义事件？**
-A: 在 `network_event.py` 中添加到 `NetworkEvent` 枚举和 `EVENTS` 字典。
+**Q: PC-A和PC-B谁应该先运行？**
+A: PC-B先运行（init为空），然后PC-A运行（init指定PC-B地址）。或者同时运行，网络库会自动重连。
 
-**Q: 能否传递复杂的JSON数据？**
-A: 可以，在 `data` 属性中传递JSON字符串，注意转义引号。
-
-**Q: 超时时间设置多长合适？**
-A: 根据网络和业务逻辑，通常30-60秒。如果PC操作比较复杂，可以加长。
+**Q: 可以用其他端口吗？**
+A: 可以，只要两端端口不冲突即可。
 
 **Q: 消息会丢失吗？**
-A: 不会。接收方会在内存队列中缓存接收到的消息，接收方调用 `receive` 时会从队列中获取。
+A: 不会。接收方会在内存队列缓存消息。
+
+**Q: 支持自定义事件吗？**
+A: 支持。在XML中send/receive任何字符串都可以，不一定要在network_event.py中定义。
 
 ## 总结
 
-| 操作 | XML写法 | 说明 |
-|------|---------|------|
-| 初始化 | `<step type="network" action="init" content="ip:port" />` | 连接到对端或启动服务器 |
-| 发送 | `<step type="network" action="send" content="event_name" />` | 发送事件给对端 |
-| 接收 | `<step type="network" action="receive" content="event_name" />` | 等待对端事件（阻塞） |
-| 停止 | `<step type="network" action="stop" content="" />` | 关闭网络连接 |
+| 操作 | 说明 |
+|------|------|
+| `init "ip:port"` | 连接到对端 |
+| `init ""` | 等待对端连接 |
+| `send "event"` | 发送事件 |
+| `receive "event"` | 等待事件 |
+| `stop ""` | 关闭连接 |
+
+---
+
+**更多例子**: 查看 `testcase/p2p_network_demo.xml`
+

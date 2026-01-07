@@ -1,83 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
-    <testcase name="P2P网络通信演示">
-        <!-- 初始化网络：本地端口9998 -->
-        <step type="network" action="init" content="" local_port="9998" />
-        <step type="wait" action="sleep" content="1" />
+    <!-- 简单P2P演示：A发消息给B，B返回消息给A -->
+    
+    <!-- PC-A: 发送方 -->
+    <testcase name="P2P_Sender">
+        <!-- 连接到PC-B -->
+        <step type="network" action="init" content="127.0.0.1:9999" local_port="9998" />
+        <step type="wait" content="1" />
         
-        <!-- 发送就绪信号 -->
-        <step type="network" action="send" content="ready" data="{&quot;status&quot;: &quot;online&quot;}" />
+        <!-- 发送消息给B -->
+        <step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello from A&quot;}" />
         
-        <!-- 等待对端的响应 -->
-        <step type="network" action="receive" content="ready" timeout="10" />
-        <step type="wait" action="sleep" content="1" />
+        <!-- 等待B的返回消息 -->
+        <step type="network" action="receive" content="message" timeout="10" />
         
-        <!-- 关闭网络 -->
+        <!-- 断开连接 -->
         <step type="network" action="stop" content="" />
     </testcase>
     
-    <testcase name="Call端流程">
-        <!-- 初始化网络，连接到对端（Answer端）192.168.1.101:9998 -->
-        <step type="network" action="init" content="192.168.1.101:9998" local_port="9998" />
-        <step type="wait" action="sleep" content="1" />
+    <!-- PC-B: 接收方 -->
+    <testcase name="P2P_Receiver">
+        <!-- 监听9999端口，等待A连接 -->
+        <step type="network" action="init" content="" local_port="9999" />
+        <step type="wait" content="1" />
         
-        <!-- 等待Answer端就绪 -->
-        <step type="network" action="receive" content="ready" timeout="30" />
+        <!-- 等待A的消息 -->
+        <step type="network" action="receive" content="message" timeout="10" />
         
-        <!-- 执行拨号UI操作 -->
-        <step type="keyboard" action="press_key" content="win" />
-        <step type="wait" action="sleep" content="1" />
-        <step type="keyboard" action="type_text" content="dialer" />
-        <step type="keyboard" action="press_key" content="enter" />
-        <step type="wait" action="sleep" content="3" />
+        <!-- 返回消息给A -->
+        <step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello from B&quot;}" />
         
-        <!-- 发送来电信号给Answer端 -->
-        <step type="network" action="send" content="call_start" data="{&quot;from&quot;: &quot;call_device&quot;, &quot;phone&quot;: &quot;188xx&quot;}" />
-        
-        <!-- 继续执行通话 -->
-        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
-        <step type="audio" action="record_async" content="testAudioFile/call_recorded.wav" device="0" duration="10" />
-        
-        <!-- 等待Answer端的接听信号 -->
-        <step type="network" action="receive" content="call_answer" timeout="30" />
-        <step type="wait" action="sleep" content="10" />
-        
-        <!-- 发送通话结束信号 -->
-        <step type="network" action="send" content="call_end" data="{&quot;duration&quot;: 10}" />
-        
-        <!-- 关闭网络 -->
-        <step type="network" action="stop" content="" />
-    </testcase>
-    
-    <testcase name="Answer端流程">
-        <!-- 初始化网络（仅启动服务器，等待Call端连接） -->
-        <step type="network" action="init" content="" local_port="9998" />
-        <step type="wait" action="sleep" content="1" />
-        
-        <!-- 发送就绪信号给Call端 -->
-        <step type="network" action="send" content="ready" data="{&quot;status&quot;: &quot;ready_to_answer&quot;}" />
-        
-        <!-- 等待来电信号 -->
-        <step type="network" action="receive" content="call_start" timeout="30" />
-        
-        <!-- 执行接听UI操作 -->
-        <step type="keyboard" action="press_key" content="volume_up" />
-        <step type="wait" action="sleep" content="1" />
-        <step type="keyboard" action="press_key" content="enter" />
-        <step type="wait" action="sleep" content="2" />
-        
-        <!-- 发送接听信号给Call端 -->
-        <step type="network" action="send" content="call_answer" data="{&quot;status&quot;: &quot;answered&quot;}" />
-        
-        <!-- 执行通话 -->
-        <step type="audio" action="play_async" content="testAudioFile/test_audio.wav" device="0" />
-        <step type="audio" action="record_async" content="testAudioFile/answer_recorded.wav" device="0" duration="10" />
-        
-        <!-- 等待Call端的结束信号 -->
-        <step type="network" action="receive" content="call_end" timeout="30" />
-        <step type="wait" action="sleep" content="1" />
-        
-        <!-- 关闭网络 -->
+        <!-- 断开连接 -->
         <step type="network" action="stop" content="" />
     </testcase>
 </testcases>
