@@ -6,7 +6,8 @@
     <testcase name="P2P_A">
         <!-- A监听9998，连接到B(172.24.166.144:9999) -->
         <step type="network" action="init" content="172.24.166.144:9999" local_port="9998" />
-        <step type="wait" content="2" />
+        <!-- 等待足够长的时间，确保B能连接上来 -->
+        <step type="wait" content="5" />
         
         <!-- 发送消息给B -->
         <step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello from A&quot;}" />
@@ -22,7 +23,8 @@
     <testcase name="P2P_B">
         <!-- B监听9999，连接到A(192.168.56.1:9998) -->
         <step type="network" action="init" content="192.168.56.1:9998" local_port="9999" />
-        <step type="wait" content="2" />
+        <!-- 等待足够长的时间，确保A能连接上来 -->
+        <step type="wait" content="5" />
         
         <!-- 等待A的消息 -->
         <step type="network" action="receive" content="message" timeout="30" />

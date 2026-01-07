@@ -35,6 +35,28 @@ class P2PNetwork:
         # 获取本机IP地址
         self.local_ip = self._get_local_ip()
 
+    def init(self, peer_host, peer_port):
+        """
+        初始化网络连接
+        
+        Args:
+            peer_host: 对端地址
+            peer_port: 对端端口
+        """
+        self.peer_host = peer_host
+        self.peer_port = peer_port
+        # 重新获取本机IP（因为现在知道了对端信息）
+        self.local_ip = self._get_local_ip()
+        
+        # 启动接收服务器
+        self._start_server()
+        
+        # 尝试连接到对端
+        self._connect_to_peer()
+        
+        print(f"[P2P] 网络已初始化 - 本地:{self.local_port}, 对端:{peer_host}:{peer_port}")
+        return True
+
     def _get_local_ip(self):
         """获取本机可用的IP地址"""
         try:
