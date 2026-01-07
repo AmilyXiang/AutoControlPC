@@ -99,6 +99,8 @@ def execute_step(step):
                 data = {'message': data_str}
             
             network = get_network()
+            print(f"[DEBUG] 开始发送消息: 事件={event_name}, 数据={data}")
+            print(f"[DEBUG] client_socket状态: {network.client_socket}")
             success = network.send(event_name, data)
             print(f"[NETWORK] 发送消息: {event_name}, 成功={success}")
         
@@ -110,6 +112,7 @@ def execute_step(step):
             timeout = float(step.get('timeout', 30))
             
             network = get_network()
+            print(f"[DEBUG] 开始等待接收: 事件={event_name}, 超时={timeout}秒")
             message = network.receive(event_name, timeout)
             
             if message:

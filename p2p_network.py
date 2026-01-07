@@ -31,26 +31,32 @@ class P2PNetwork:
         self.receive_thread = None
         self.message_queue = []         # 接收到的消息队列
         self.message_lock = threading.Lock()
+        
+        # 获取本机IP地址
+        self.local_ip = self._get_local_ip()
 
-    def init(self, peer_host, peer_port):
-        """
-        初始化网络连接
+    def _get_local_ip(self):
+        """获取本机可用的IP地址"""
+        try:
+            # 尝试连接到对端，从而获取本机对外的IP
+            if self.peer_host:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect((self.peer_host, self.peer_port or 9999))
+                ip = s.getsockname()[0]
+                s.close()
+                return ip
+        except:
+            pass
         
-        Args:
-            peer_host: 对端地址
-            peer_port: 对端端口
-        """
-        self.peer_host = peer_host
-        self.peer_port = peer_port
-        
-        # 启动接收服务器
-        self._start_server()
-        
-        # 尝试连接到对端
-        self._connect_to_peer()
-        
-        print(f"[P2P] 网络已初始化 - 本地:{self.local_port}, 对端:{peer_host}:{peer_port}")
-        return True
+        # 备选方案：获取第一个非环回地址
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except:
+            return "127.0.0.1"
 
     def _start_server(self):
         """启动接收服务器"""
@@ -65,7 +71,9 @@ class P2PNetwork:
             self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
             self.receive_thread.start()
             
-            print(f"[P2P] 接收服务器启动 (端口: {self.local_port})")
+            print(f"[P2P] ✓ 接收服务器启动")
+            print(f"[P2P]   本地端口: {self.local_port}")
+            print(f"[P2P]   可连接地址: {self.local_ip}:{self.local_port}")
         except Exception as e:
             print(f"[P2P] 启动接收服务器失败: {e}")
             return False
@@ -118,18 +126,39 @@ class P2PNetwork:
             client_socket.close()
 
     def _connect_to_peer(self):
-        """连接到对端"""
+        """连接到对端（带重试机制）"""
         if not self.peer_host:
+            print(f"[P2P] 跳过连接: peer_host为空")
             return False
         
-        try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((self.peer_host, self.peer_port))
-            print(f"[P2P] 已连接到对端 {self.peer_host}:{self.peer_port}")
-            return True
-        except Exception as e:
-            print(f"[P2P] 连接对端失败: {e}，等待对端主动连接...")
-            return False
+        max_retries = 5
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"[P2P] 尝试连接到对端 {self.peer_host}:{self.peer_port} (第 {attempt+1}/{max_retries} 次)...")
+                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.client_socket.settimeout(10)  # 设置10秒连接超时
+                self.client_socket.connect((self.peer_host, self.peer_port))
+                self.client_socket.settimeout(None)  # 连接成功后移除超时
+                print(f"[P2P] ✓ 已连接到对端 {self.peer_host}:{self.peer_port}")
+                return True
+            except socket.timeout:
+                print(f"[P2P] 连接超时 (WinError 10060)，{retry_delay}秒后重试...")
+                self.client_socket = None
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    print(f"[P2P] ✗ 连接失败: 达到最大重试次数")
+                    return False
+            except Exception as e:
+                print(f"[P2P] 连接失败: {e}")
+                self.client_socket = None
+                if attempt < max_retries - 1:
+                    print(f"[P2P] {retry_delay}秒后重试...")
+                    time.sleep(retry_delay)
+                else:
+                    return False
 
     def send(self, event, data=None, timeout=5):
         """
@@ -157,6 +186,7 @@ class P2PNetwork:
         try:
             # 如果还没有连接，尝试连接
             if not self.client_socket:
+                print(f"[P2P] 发送前检查: client_socket为None，peer_host={self.peer_host}:{self.peer_port}")
                 if not self._connect_to_peer():
                     print(f"[P2P] 发送失败: 无法连接到对端")
                     return False
