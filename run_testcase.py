@@ -197,15 +197,19 @@ def execute_step(step):
                 print(f"[ICON] 未检测到图标: {content}")
     time.sleep(0.3)
 
-def execute_testcases(xml_path):
+def execute_testcases(xml_path, testcase_name=None):
     tree = ET.parse(xml_path)
     root = tree.getroot()
     import glob
     for testcase in root.findall('testcase'):
-        print(f"\n开始执行用例: {testcase.get('name')}")
+        tc_name = testcase.get('name')
+        # 如果指定了testcase_name，则只执行匹配的
+        if testcase_name and tc_name != testcase_name:
+            continue
+        print(f"\n开始执行用例: {tc_name}")
         for step in testcase.findall('step'):
             execute_step(step)
-        print(f"用例 '{testcase.get('name')}' 执行完毕\n")
+        print(f"用例 '{tc_name}' 执行完毕\n")
         # 删除执行过程中生成的图片等文件
         patterns = ["last_rainbow_screenshot.png", "after_cui_ji_click.png", "after_call_click.png"]
         for pat in patterns:
@@ -218,14 +222,16 @@ def execute_testcases(xml_path):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("用法: python run_testcase.py <xml文件路径>")
-        print("示例: python run_testcase.py testcase/rainbow_main.xml")
+        print("用法: python run_testcase.py <xml文件路径> [testcase名称]")
+        print("示例: python run_testcase.py testcase/p2p_network_demo.xml P2P_Sender")
+        print("      python run_testcase.py testcase/rainbow_main.xml")
         sys.exit(1)
     xml_file = sys.argv[1]
+    testcase_name = sys.argv[2] if len(sys.argv) > 2 else None
     if not os.path.isfile(xml_file):
         print(f"未找到指定的xml文件: {xml_file}")
         sys.exit(2)
-    execute_testcases(xml_file)
+    execute_testcases(xml_file, testcase_name)
     # 程序结束后清理所有 debug_match_*.png
     import glob
     for f in glob.glob('debug_match_*.png'):

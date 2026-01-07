@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
-    <!-- 简单P2P演示：A发消息给B，B返回消息给A -->
+    <!-- P2P演示：A和B互相连接，双方都是服务器和客户端 -->
     
-    <!-- PC-A: 发送方 -->
-    <testcase name="P2P_Sender">
-        <!-- 连接到PC-B -->
-        <step type="network" action="init" content="127.0.0.1:9999" local_port="9998" />
-        <step type="wait" content="1" />
+    <!-- PC-A -->
+    <testcase name="P2P_A">
+        <!-- A既监听9998，也连接到B的9999 -->
+        <step type="network" action="init" content="172.24.166.144:9999" local_port="9998" />
+        <step type="wait" content="2" />
         
         <!-- 发送消息给B -->
         <step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello from A&quot;}" />
         
         <!-- 等待B的返回消息 -->
-        <step type="network" action="receive" content="message" timeout="10" />
+        <step type="network" action="receive" content="message" timeout="30" />
         
         <!-- 断开连接 -->
         <step type="network" action="stop" content="" />
     </testcase>
     
-    <!-- PC-B: 接收方 -->
-    <testcase name="P2P_Receiver">
-        <!-- 监听9999端口，等待A连接 -->
-        <step type="network" action="init" content="" local_port="9999" />
-        <step type="wait" content="1" />
+    <!-- PC-B -->
+    <testcase name="P2P_B">
+        <!-- B既监听9999，也连接到A的9998 -->
+        <step type="network" action="init" content="172.24.166.144:9998" local_port="9999" />
+        <step type="wait" content="2" />
         
         <!-- 等待A的消息 -->
-        <step type="network" action="receive" content="message" timeout="10" />
+        <step type="network" action="receive" content="message" timeout="30" />
         
         <!-- 返回消息给A -->
         <step type="network" action="send" content="message" data="{&quot;text&quot;: &quot;Hello from B&quot;}" />
