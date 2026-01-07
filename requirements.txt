@@ -2,6 +2,7 @@
 
 # UI Automation & Control
 pyautogui==0.9.53
+pynput>=1.7.6
 
 # Image Processing & Screenshots
 Pillow>=9.0.0
@@ -9,12 +10,12 @@ numpy>=1.20.0
 opencv-python>=4.5.0
 
 # OCR & Text Recognition
-PaddleOCR==2.8.0.3
+easyocr>=1.6.0
 
 # Audio Playback & Recording
 pygame>=2.0.0
 pydub>=0.25.1
-simpleaudio>=1.0.4
+# simpleaudio>=1.0.4
 sounddevice>=0.4.6
 soundfile>=0.12.1
 

@@ -4,13 +4,14 @@
         <step type="keyboard" action="press_key" content="win" />
         <step type="keyboard" action="type_text" content="rainbow" />
         <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
         <step type="mouse" action="move_mouse" content="100,80" />
         <step type="mouse" action="click" content="left" />
         <step type="check" action="input_method" content="英语(美国)" />
-        <step type="keyboard" action="type_text" content="fei sun" />
+        <step type="keyboard" action="type_text" content="boliang" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="fei sun" /-->
-        <step type="icon" action="find_and_move" content="png/rainbow/fei.jpg" />
+        <step type="icon" action="find_and_move" content="png/rainbow/bxiang.jpg" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="Call" /-->
@@ -18,7 +19,7 @@
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
         <!--step type="ocr" action="find_and_click" content="Audio" /-->
-        <step type="icon" action="find_and_move" content="png/headset_call.jpg" />
+        <step type="icon" action="find_and_move" content="png/rainbow/headset_call.jpg" />
         <step type="mouse" action="click" content="left" />
     </testcase>
 </testcases>
