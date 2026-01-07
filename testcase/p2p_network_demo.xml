@@ -22,7 +22,7 @@
     <!-- PC-B -->
     <testcase name="P2P_B">
         <!-- B监听9999，连接到A(192.168.56.1:9998) -->
-        <step type="network" action="init" content="192.168.56.1:9998" local_port="9999" />
+        <step type="network" action="init" content="172.24.191.34:9998" local_port="9999" />
         <!-- 等待足够长的时间，确保A能连接上来 -->
         <step type="wait" content="5" />
         

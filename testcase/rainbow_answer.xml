@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
     <testcase name="rainbow自动接听">
+        <!-- 建立P2P连接：B监听9999，连接到A的192.168.56.1:9998 -->
+        <step type="network" action="init" content="192.168.56.1:9998" local_port="9999" />
+        <step type="wait" content="3" />
+        
+        <!-- 等待A的就绪信号 -->
+        <step type="network" action="receive" content="ready" timeout="30" />
+        <!-- 发送就绪信号给A，确认连接双向建立 -->
+        <step type="network" action="send" content="ready" data="{&quot;status&quot;: &quot;B_ready&quot;}" />
+        <step type="wait" content="1" />
+        
+        <!-- 等待A的call_start信号，确认A已准备好发起呼叫 -->
+        <step type="network" action="receive" content="call_start" timeout="30" />
+        <step type="wait" content="1" />
+        
+        <!-- 连接确认完成，开始等待来电 -->
         <!-- 等待来电弹窗出现，可根据实际情况调整等待时间 -->
         <step type="wait" action="sleep" content="5" />
         <!-- OCR查找并点击“接听”按钮，按钮文字可根据实际界面调整，如“接听”、“Answer”等 -->

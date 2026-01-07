@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
     <testcase name="rainbow——call主流程自动化">
+        <!-- 建立P2P连接：A监听9998，连接到B的9999 -->
+        <step type="network" action="init" content="172.24.166.144:9999" local_port="9998" />
+        <step type="wait" content="3" />
+        
+        <!-- 发送就绪信号给B，确认连接已建立 -->
+        <step type="network" action="send" content="ready" data="{&quot;status&quot;: &quot;A_ready&quot;}" />
+        <!-- 等待B的就绪信号，确认双向连接 -->
+        <step type="network" action="receive" content="ready" timeout="30" />
+        <step type="wait" content="1" />
+        
+        <!-- 连接确认完成，开始Rainbow应用的测试流程 -->
         <step type="keyboard" action="press_key" content="win" />
         <step type="keyboard" action="type_text" content="rainbow" />
         <step type="keyboard" action="press_key" content="enter" />
@@ -21,5 +32,9 @@
         <!--step type="ocr" action="find_and_click" content="Audio" /-->
         <step type="icon" action="find_and_move" content="png/rainbow/headset_call.jpg" />
         <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        
+        <!-- 向B发送call_start信号，通知B开始等待来电 -->
+        <step type="network" action="send" content="call_start" data="{&quot;from&quot;: &quot;A&quot;}" />
     </testcase>
 </testcases>

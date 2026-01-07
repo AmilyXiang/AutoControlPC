@@ -75,15 +75,20 @@ def execute_step(step):
             # 属性: local_port (本地监听端口，默认9998)
             local_port = int(step.get('local_port', 9998))
             
-            if content and ':' in content:
-                parts = content.split(':')
-                peer_host = parts[0]
-                peer_port = int(parts[1])
-                print(f"[NETWORK] 初始化网络: 本地端口={local_port}, 对端={peer_host}:{peer_port}")
-                init_network(local_port, peer_host, peer_port)
-            else:
-                print(f"[NETWORK] 初始化网络: 本地端口={local_port}（仅启动服务器）")
-                init_network(local_port=local_port)
+            try:
+                if content and ':' in content:
+                    parts = content.split(':')
+                    peer_host = parts[0]
+                    peer_port = int(parts[1])
+                    print(f"[NETWORK] 初始化网络: 本地端口={local_port}, 对端={peer_host}:{peer_port}")
+                    init_network(local_port, peer_host, peer_port)
+                else:
+                    print(f"[NETWORK] 初始化网络: 本地端口={local_port}（仅启动服务器）")
+                    init_network(local_port=local_port)
+                print(f"[NETWORK] ✓ 网络初始化成功")
+            except Exception as e:
+                print(f"[NETWORK] ✗ 网络初始化失败: {e}")
+                raise RuntimeError(f"网络初始化失败，停止测试: {e}")
         
         elif action == 'send':
             # network send: 发送消息
@@ -103,6 +108,10 @@ def execute_step(step):
             print(f"[DEBUG] client_socket状态: {network.client_socket}")
             success = network.send(event_name, data)
             print(f"[NETWORK] 发送消息: {event_name}, 成功={success}")
+            
+            if not success:
+                print(f"[NETWORK] ✗ 消息发送失败")
+                raise RuntimeError(f"消息发送失败（事件: {event_name}），停止测试")
         
         elif action == 'receive':
             # network receive: 接收消息（阻塞）
@@ -116,9 +125,10 @@ def execute_step(step):
             message = network.receive(event_name, timeout)
             
             if message:
-                print(f"[NETWORK] 接收成功: {message}")
+                print(f"[NETWORK] ✓ 接收成功: {message}")
             else:
-                print(f"[NETWORK] 接收超时: 事件={event_name}, 超时={timeout}秒")
+                print(f"[NETWORK] ✗ 接收超时或失败: 事件={event_name}, 超时={timeout}秒")
+                raise RuntimeError(f"消息接收失败或超时（事件: {event_name}），停止测试")
         
         elif action == 'stop':
             # network stop: 停止网络连接
