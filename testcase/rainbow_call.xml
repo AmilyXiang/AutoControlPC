@@ -36,5 +36,12 @@
         
         <!-- 向B发送call_start信号，通知B开始等待来电 -->
         <step type="network" action="send" content="call_start" data="{&quot;from&quot;: &quot;A&quot;}" />
+        <step type="wait" content="1" />
+        
+        <!-- 等待B的call_answer信号，确认B已接听，通话建立 -->
+        <step type="network" action="receive" content="call_answer" timeout="30" />
+        <step type="wait" content="1" />
+        
+        <!-- 通话建立完成，后续可以添加通话过程中的操作 -->
     </testcase>
 </testcases>

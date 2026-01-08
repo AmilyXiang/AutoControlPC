@@ -22,5 +22,12 @@
         <step type="icon" action="find_and_move" content="png/rainbow/accept.png" />
         <!--step type="ocr" action="find_and_click" content="Accept" /-->
         <step type="mouse" action="click" content="left" />
+        <step type="wait" content="1" />
+        
+        <!-- 向A发送call_answer信号，确认已接听，通话建立 -->
+        <step type="network" action="send" content="call_answer" data="{&quot;from&quot;: &quot;B&quot;}" />
+        <step type="wait" content="1" />
+        
+        <!-- 通话建立完成，后续可以添加通话过程中的操作 -->
     </testcase>
 </testcases>

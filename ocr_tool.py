@@ -3,16 +3,23 @@ ocr_tool.py
 独立OCR工具，基于easyocr，支持截图识别和文本定位。
 """
 
+import os
 import easyocr
 from PIL import ImageGrab
 import numpy as np
 import cv2
 
+# 禁用CUDA加速，避免"no accelerator is found"警告
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
 class OcrTool:
-    def __init__(self, lang_list=None, gpu=False):
+    def __init__(self, lang_list=None, gpu=False, model_storage_directory='.easyocr'):
         if lang_list is None:
             lang_list = ['en']
-        self.reader = easyocr.Reader(lang_list, gpu=gpu)
+        # gpu=False: 不使用GPU加速，仅CPU运行
+        # model_storage_directory: 模型缓存目录，避免重复下载
+        # verbose=False: 不输出详细日志信息
+        self.reader = easyocr.Reader(lang_list, gpu=gpu, model_storage_directory=model_storage_directory, verbose=False)
 
     def find_text_position(self, target_text, screenshot=None, fuzzy=True):
         """
