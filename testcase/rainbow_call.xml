@@ -43,5 +43,16 @@
         <step type="wait" content="1" />
         
         <!-- 通话建立完成，后续可以添加通话过程中的操作 -->
+        <!-- 发送消息给B，通知准备开始播放 -->
+        <step type="network" action="send" content="audio_play_start" data="{&quot;file&quot;: &quot;sine_40.wav&quot;, &quot;status&quot;: &quot;starting&quot;}" />
+        <step type="wait" content="0.5" />
+        
+        <!-- 使用设备4播放testAudioFile中的sine_40.wav文件 -->
+        <step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" />
+        
+        <!-- 播放完成后，发送消息给B通知停止录音 -->
+        <step type="network" action="send" content="audio_play_end" data="{&quot;file&quot;: &quot;sine_40.wav&quot;, &quot;status&quot;: &quot;completed&quot;}" />
+        <step type="wait" content="1" />
+        
     </testcase>
 </testcases>

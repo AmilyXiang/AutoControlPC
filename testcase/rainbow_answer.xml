@@ -2,7 +2,7 @@
 <testcases>
     <testcase name="rainbow自动接听">
         <!-- 建立P2P连接：B监听9999，连接到A的172.34.191.34:9998 -->
-        <step type="network" action="init" content="172.24.191.34:9998" local_port="9999" />
+        <step type="network" action="init" content="172.24.191.21:9998" local_port="9999" />
         <step type="wait" content="3" />
         
         <!-- 等待A的就绪信号 -->
@@ -29,5 +29,19 @@
         <step type="wait" content="1" />
         
         <!-- 通话建立完成，后续可以添加通话过程中的操作 -->
+        <!-- 等待A的audio_play_start消息，确认A准备开始播放 -->
+        <step type="network" action="receive" content="audio_play_start" timeout="30" />
+        <step type="wait" content="0.5" />
+        
+        <!-- 使用设备24异步开始录音（设定足够长的时长） -->
+        <step type="audio" action="record_async" content="testAudioFile/record_sine_40.wav" device_id="24" duration="60" />
+        
+        <!-- 等待A的audio_play_end消息，确认播放已结束 -->
+        <step type="network" action="receive" content="audio_play_end" timeout="30" />
+        <step type="wait" content="0.5" />
+        
+        <!-- 收到消息后停止录音 -->
+        <step type="audio" action="stop_record" />
+        <step type="wait" content="1" />
     </testcase>
 </testcases>
