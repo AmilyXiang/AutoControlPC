@@ -54,5 +54,14 @@
         <step type="network" action="send" content="audio_play_end" data="{&quot;file&quot;: &quot;sine_40.wav&quot;, &quot;status&quot;: &quot;completed&quot;}" />
         <step type="wait" content="1" />
         
+        <!-- 等待B的录音停止消息 -->
+        <step type="network" action="receive" content="record_stopped" timeout="30" />
+        <step type="wait" content="1" />
+        
+        <!-- 挂断电话 -->
+        <step type="icon" action="find_and_move" content="png/rainbow/hangup.jpg" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="2" />
+        
     </testcase>
 </testcases>

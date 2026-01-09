@@ -43,5 +43,9 @@
         <!-- 收到消息后停止录音 -->
         <step type="audio" action="stop_record" />
         <step type="wait" content="1" />
+        
+        <!-- 向A发送录音停止消息 -->
+        <step type="network" action="send" content="record_stopped" data="{&quot;status&quot;: &quot;stopped&quot;}" />
+        <step type="wait" content="1" />
     </testcase>
 </testcases>
