@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
     <testcase name="同时放音和录音测试">
-        <!-- 同时进行异步播放和异步录音 -->
+        <!-- 同时进行异步播放和异步录音
+             device支持三种方式:
+             1. 数字ID: device="25"
+             2. 配置昵称: device="speakers" (需在device_manager.py配置)
+             3. 设备名称匹配: device="Realtek" (模糊匹配，不区分大小写)
+        -->
         <step type="wait" action="sleep" content="1" />
+        
+        <!-- 使用数字ID方式 -->
         <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="25" />
         <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_1.wav" device="24" duration="30" />
         <step type="wait" action="sleep" content="6" />
         
-        <!-- 第二轮 -->
-        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="25" />
-        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_2.wav" device="24" duration="30" />
+        <!-- 第二轮：可以使用字符串标识设备 -->
+        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="speakers" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_2.wav" device="microphone" duration="30" />
         <step type="wait" action="sleep" content="6" />
     </testcase>
 </testcases>

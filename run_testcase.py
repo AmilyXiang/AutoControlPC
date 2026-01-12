@@ -13,6 +13,9 @@ import numpy as np
 from ocr_tool import OcrTool
 ocr = OcrTool(['en', 'ch_sim'], gpu=False)
 
+# 设备管理器
+from device_manager import get_device_id
+
 # P2P网络支持
 from p2p_network import get_network, init_network, stop_network
 from network_event import NetworkEvent, EVENTS
@@ -39,8 +42,9 @@ def execute_step(step):
     elif step_type == 'audio':
         if action == 'play':
             from audio_player import play_audio
-            device_idx = int(step.get('device', -1))
-            device_arg = device_idx if device_idx >= 0 else None
+            device_str = step.get('device', '-1')
+            device_idx = get_device_id(device_str)
+            device_arg = device_idx if device_idx is not None and device_idx >= 0 else None
             time_duration = step.get('time')
             duration_arg = float(time_duration) if time_duration else None
             ok = play_audio(content, device_arg, duration_arg)
@@ -48,17 +52,22 @@ def execute_step(step):
         elif action == 'play_async':
             # 异步播放，不阻塞后续步骤
             from audio_player import play_audio
-            device_idx = int(step.get('device', -1))
-            device_arg = device_idx if device_idx >= 0 else None
+            device_str = step.get('device', '-1')
+            device_idx = get_device_id(device_str)
+            device_arg = device_idx if device_idx is not None and device_idx >= 0 else None
             time_duration = step.get('time')
             duration_arg = float(time_duration) if time_duration else None
             thread = threading.Thread(target=play_audio, args=(content, device_arg, duration_arg), daemon=True)
             thread.start()
-            print(f"[AUDIO] 异步播放音频: {content}，设备: {device_idx if device_idx >= 0 else '默认'}" + (f", 时长: {duration_arg}s" if duration_arg else ""))
+            device_display = f"'{device_str}' (ID={device_idx})" if device_idx is not None else (device_str if device_str != '-1' else '默认')
+            print(f"[AUDIO] 异步播放音频: {content}，设备: {device_display}" + (f", 时长: {duration_arg}s" if duration_arg else ""))
         elif action == 'record':
             # 同步录音
             from audio_recorder import record_audio
-            device_idx = int(step.get('device', 0))
+            device_str = step.get('device', '0')
+            device_idx = get_device_id(device_str)
+            if device_idx is None:
+                device_idx = 0
             duration = float(step.get('duration', 5))
             output_file = content
             record_audio(device_idx, duration, output_file)
@@ -66,12 +75,16 @@ def execute_step(step):
         elif action == 'record_async':
             # 异步录音，不阻塞后续步骤
             from audio_recorder import record_audio
-            device_idx = int(step.get('device', 0))
+            device_str = step.get('device', '0')
+            device_idx = get_device_id(device_str)
+            if device_idx is None:
+                device_idx = 0
             duration = float(step.get('duration', 5))
             output_file = content
             thread = threading.Thread(target=record_audio, args=(device_idx, duration, output_file), daemon=True)
             thread.start()
-            print(f"[AUDIO] 异步录音开始，设备: {device_idx}，时长: {duration}s，输出: {output_file}")
+            device_display = f"'{device_str}' (ID={device_idx})" if device_str != '0' else '0'
+            print(f"[AUDIO] 异步录音开始，设备: {device_display}，时长: {duration}s，输出: {output_file}")
         elif action == 'stop_record':
             # 停止录音
             from audio_recorder import stop_record
