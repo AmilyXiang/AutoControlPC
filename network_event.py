@@ -23,6 +23,9 @@ class NetworkEvent(Enum):
     # 音视频事件
     AUDIO_START = "audio_start"            # 开始音频
     AUDIO_STOP = "audio_stop"              # 停止音频
+    AUDIO_PLAY_START = "audio_play_start"  # 音频播放开始
+    AUDIO_PLAY_END = "audio_play_end"      # 音频播放结束
+    RECORD_STOPPED = "record_stopped"      # 录音已停止
     VIDEO_START = "video_start"            # 开始视频
     VIDEO_STOP = "video_stop"              # 停止视频
     
@@ -58,6 +61,9 @@ EVENTS = {
     'call_reject': NetworkEvent.CALL_REJECT,
     'audio_start': NetworkEvent.AUDIO_START,
     'audio_stop': NetworkEvent.AUDIO_STOP,
+    'audio_play_start': NetworkEvent.AUDIO_PLAY_START,
+    'audio_play_end': NetworkEvent.AUDIO_PLAY_END,
+    'record_stopped': NetworkEvent.RECORD_STOPPED,
     'video_start': NetworkEvent.VIDEO_START,
     'video_stop': NetworkEvent.VIDEO_STOP,
     'message': NetworkEvent.MESSAGE,

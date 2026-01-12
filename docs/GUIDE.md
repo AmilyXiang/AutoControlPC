@@ -48,15 +48,44 @@
     - `window`：窗口操作（如最大化）
     - `icon`：图标检测与自动移动鼠标
 
-## 录音工具
+## 录音和播放工具
 
-- **audio_recorder.py**
-  - 支持列出所有输入设备（声卡/麦克风），并选择指定设备进行录音，保存为wav文件。
-  - 用法：
-    - `python audio_recorder.py list` 列出所有输入设备
-    - `python audio_recorder.py record <设备编号> <时长秒> <输出wav文件>` 录音
-  - 依赖 sounddevice、soundfile。
-  - 多个相同名称的设备是驱动/系统多实例所致，任选一个能录音即可。
+### 音频播放 - audio_player.py
+- **单机播放**：支持 WAV、MP3、PCM 等格式
+- **多设备支持**：通过 `device_id` 参数指定输出设备
+- **播放时长控制**：可通过 `time` 参数限制播放时长，默认播放完整文件
+- 用法：
+  - `python audio_player.py list` 列出所有输出设备
+  - `python audio_player.py <音频文件> [设备ID]` 播放文件
+- 依赖：simpleaudio、pygame、pydub
+
+### 音频录音 - audio_recorder.py
+- **支持列出输入设备**：`python audio_recorder.py list` 
+- **选择设备录音**：`python audio_recorder.py record <设备ID> <时长秒> <输出文件>`
+- **异步录音停止**：通过 `stop_record()` 函数主动停止正在进行的录音
+- 依赖：sounddevice、soundfile
+- 多个相同名称的设备是驱动/系统多实例，任选一个能用的即可
+
+### XML中的音频操作
+```xml
+<!-- 播放（同步，阻塞） -->
+<step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" />
+
+<!-- 播放（同步，限制时长为3秒） -->
+<step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" time="3" />
+
+<!-- 播放（异步，不阻塞后续步骤） -->
+<step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device_id="25" time="5" />
+
+<!-- 录音（同步，从设备24录5秒） -->
+<step type="audio" action="record" content="output/record.wav" device_id="24" duration="5" />
+
+<!-- 录音（异步，从设备24持续60秒，后续可主动停止） -->
+<step type="audio" action="record_async" content="output/record.wav" device_id="24" duration="60" />
+
+<!-- 停止正在进行的录音 -->
+<step type="audio" action="stop_record" />
+```
 
 ## 其他
 - **requirements.txt**

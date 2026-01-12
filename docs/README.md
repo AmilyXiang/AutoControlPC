@@ -12,9 +12,10 @@
 - **图标检测**：基于OpenCV模板匹配，精准检测图标并交互
 
 ### 音频操作
-- **多设备播放**：支持指定声卡设备播放音频（同步/异步）
-- **多设备录音**：支持指定声卡设备录音
+- **多设备播放**：支持指定声卡设备播放音频（同步/异步），可设置播放时长
+- **多设备录音**：支持指定声卡设备录音，支持异步录音和停止录音
 - **同步音频**：两台PC同时播放和录音，支持跨PC音频转接
+- **播放控制**：可设置 `time` 参数限制播放时长，不设置则播放到文件结束
 
 ### 网络协调（P2P）
 - **对等通信**：两台PC双向通信，无中央服务器
@@ -98,22 +99,96 @@ AutoControlPC/
 ### 1. 音频操作（多设备）
 ```xml
 <testcase name="AudioTest" description="多设备同时播放和录音">
-    <!-- 播放音频到设备0 -->
-    <step type="audio" action="play" content="audio/sound.wav" device="0" />
+    <!-- 播放音频到设备4，播放完整文件 -->
+    <step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" />
     
-    <!-- 异步播放到设备1 -->
-    <step type="audio" action="play_async" content="audio/music.wav" device="1" />
+    <!-- 异步播放到设备25，仅播放3秒 -->
+    <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device_id="25" time="3" />
     
-    <!-- 从设备24录音10秒 -->
-    <step type="audio" action="record" content="output/record.wav" 
-          device="24" duration="10" />
+    <!-- 异步录音10秒（从设备24） -->
+    <step type="audio" action="record_async" content="testAudioFile/recorded.wav" 
+          device_id="24" duration="10" />
+    
+    <!-- 停止正在进行的录音 -->
+    <step type="audio" action="stop_record" />
     
     <!-- 等待1秒 -->
     <step type="wait" content="1" />
 </testcase>
 ```
 
+**音频操作参数说明**：
+- `device_id` / `device`：指定音频设备ID（可通过 `python audio_player.py list` 查看）
+- `time`：（仅限 play/play_async）播放时长（秒），不设置则播放到文件结束
+- `duration`：（仅限 record/record_async）录音时长（秒）
+
 ### 2. P2P网络通信
+```xml
+<!-- PC-A：发起通话 -->
+<testcase name="P2P_Caller" description="发起端">
+    <!-- 初始化P2P，连接到PC-B (192.168.1.102:9999) -->
+    <step type="network" action="init" content="192.168.1.102:9999" 
+          local_port="9998" />
+    
+    <!-- 发送"准备就绪"事件 -->
+    <step type="network" action="send" content="ready" 
+          data="{&quot;status&quot;: &quot;online&quot;}" />
+    
+    <!-- 发送"开始播放音频"事件 -->
+    <step type="network" action="send" content="audio_play_start" 
+          data="{&quot;file&quot;: &quot;sine_40.wav&quot;}" />
+    
+    <!-- 播放音频 -->
+    <step type="audio" action="play" content="testAudioFile/sine_40.wav" 
+          device_id="4" />
+    
+    <!-- 发送"播放完成"事件 -->
+    <step type="network" action="send" content="audio_play_end" 
+          data="{&quot;file&quot;: &quot;sine_40.wav&quot;}" />
+    
+    <!-- 等待对端"录音停止"事件 -->
+    <step type="network" action="receive" content="record_stopped" 
+          timeout="30" />
+    
+    <!-- 关闭网络连接 -->
+    <step type="network" action="stop" content="" />
+</testcase>
+
+<!-- PC-B：接听通话 -->
+<testcase name="P2P_Receiver" description="接听端">
+    <!-- 初始化P2P，监听本地9999端口 -->
+    <step type="network" action="init" content="192.168.1.101:9998" 
+          local_port="9999" />
+    
+    <!-- 等待"准备就绪"事件 -->
+    <step type="network" action="receive" content="ready" timeout="30" />
+    
+    <!-- 等待"开始播放音频"事件 -->
+    <step type="network" action="receive" content="audio_play_start" timeout="30" />
+    
+    <!-- 异步开始录音 -->
+    <step type="audio" action="record_async" content="testAudioFile/record.wav" 
+          device_id="24" duration="60" />
+    
+    <!-- 等待"播放完成"事件 -->
+    <step type="network" action="receive" content="audio_play_end" timeout="30" />
+    
+    <!-- 停止录音 -->
+    <step type="audio" action="stop_record" />
+    
+    <!-- 发送"录音停止"事件给对端 -->
+    <step type="network" action="send" content="record_stopped" 
+          data="{&quot;status&quot;: &quot;stopped&quot;}" />
+</testcase>
+```
+
+**网络事件清单**：
+- `ready` - 就绪信号
+- `call_start` / `call_answer` - 通话相关
+- `audio_play_start` / `audio_play_end` - 音频播放控制
+- `record_stopped` - 录音停止通知
+
+### 3. P2P网络通信（基础示例）
 ```xml
 <!-- PC-A：发起通话 -->
 <testcase name="P2P_Caller" description="发起端">
@@ -147,7 +222,7 @@ AutoControlPC/
     
     <!-- 等待"发起通话"事件 -->
     <step type="network" action="receive" content="call_start" timeout="30" />
-    
+
     <!-- 发送"接听"事件 -->
     <step type="network" action="send" content="call_answer" 
           data="{&quot;receiver&quot;: &quot;Bob&quot;}" />
