@@ -271,6 +271,6 @@ if __name__ == '__main__':
     for f in glob.glob('debug_match_*.png'):
         try:
             os.remove(f)
-            print(f"已删除调试图片: {f}")
+            #print(f"已删除调试图片: {f}")
         except Exception as e:
             print(f"删除调试图片失败: {f}, 原因: {e}")

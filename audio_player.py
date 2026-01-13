@@ -20,52 +20,6 @@ try:
 except ImportError:
     pygame = None
 
-def list_devices():
-    """列出所有可用的音频设备"""
-    devices = []
-    
-    # 尝试用 pygame 列出设备
-    if pygame:
-        try:
-            pygame.mixer.init()
-            # pygame 支持的设备信息
-            devices.append("=== pygame 音频设备 ===")
-            # pygame 没有直接的设备列表API，但可以通过不同的初始化方式
-            devices.append("默认设备已初始化")
-        except Exception as e:
-            devices.append(f"pygame 初始化失败: {e}")
-    
-    # 尝试用 sounddevice 或其他工具列出设备
-    try:
-        import sounddevice as sd
-        devices.append("\n=== 所有音频设备 ===")
-        device_list = sd.query_devices()
-        for i, device in enumerate(device_list):
-            devices.append(f"设备 {i}: {device['name']} (输入: {device['max_input_channels']}, 输出: {device['max_output_channels']})")
-    except ImportError:
-        pass
-    except Exception as e:
-        devices.append(f"sounddevice 查询失败: {e}")
-    
-    # Windows 系统尝试使用 pyaudio
-    try:
-        import pyaudio
-        devices.append("\n=== PyAudio 音频设备 ===")
-        p = pyaudio.PyAudio()
-        for i in range(p.get_device_count()):
-            device_info = p.get_device_info_by_index(i)
-            devices.append(f"设备 {i}: {device_info['name']} (输入: {device_info['maxInputChannels']}, 输出: {device_info['maxOutputChannels']})")
-        p.terminate()
-    except ImportError:
-        pass
-    except Exception as e:
-        devices.append(f"PyAudio 查询失败: {e}")
-    
-    if not devices:
-        devices.append("无可用的设备查询工具")
-    
-    return devices
-
 def play_audio(file_path, device_id=None, duration=None):
     """
     播放音频文件
@@ -145,15 +99,9 @@ if __name__ == '__main__':
     file_path = None
     
     if len(sys.argv) < 2:
-        print("用法: python audio_player.py <audio文件路径|list> [设备ID]")
+        print("用法: python audio_player.py <audio文件路径> [设备ID]")
+        print("提示: 查看设备列表请运行 python device_manager.py list")
         sys.exit(1)
-    
-    # 处理 list 命令
-    if sys.argv[1] == 'list':
-        devices = list_devices()
-        for device_info in devices:
-            print(device_info)
-        sys.exit(0)
     
     file_path = sys.argv[1]
     if len(sys.argv) >= 3:

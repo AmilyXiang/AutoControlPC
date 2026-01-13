@@ -17,12 +17,6 @@ _recording_state = {
     'lock': threading.Lock()
 }
 
-def list_input_devices():
-    print("可用输入设备（声卡）：")
-    for idx, dev in enumerate(sd.query_devices()):
-        if dev['max_input_channels'] > 0:
-            print(f"[{idx}] {dev['name']}")
-
 def record_audio(device_idx, duration, out_wav, samplerate=44100, channels=1):
     """同步录音，阻塞直到时长结束或被停止"""
     print(f"录音设备: {device_idx}, 时长: {duration}s, 输出: {out_wav}")
@@ -56,11 +50,10 @@ def stop_record():
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("用法: python audio_recorder.py list | record <device_idx> <duration秒> <输出wav文件> | stop")
+        print("用法: python audio_recorder.py record <device_idx> <duration秒> <输出wav文件> | stop")
+        print("提示: 查看设备列表请运行 python device_manager.py list")
         sys.exit(1)
-    if sys.argv[1] == 'list':
-        list_input_devices()
-    elif sys.argv[1] == 'record' and len(sys.argv) == 5:
+    if sys.argv[1] == 'record' and len(sys.argv) == 5:
         device_idx = int(sys.argv[2])
         duration = float(sys.argv[3])
         out_wav = sys.argv[4]
@@ -68,5 +61,5 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'stop':
         stop_record()
     else:
-        print("参数错误。用法: python audio_recorder.py list | record <device_idx> <duration秒> <输出wav文件> | stop")
+        print("参数错误。用法: python audio_recorder.py record <device_idx> <duration秒> <输出wav文件> | stop")
 

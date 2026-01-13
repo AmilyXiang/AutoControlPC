@@ -2,7 +2,7 @@
 <testcases>
     <testcase name="rainbow——call主流程自动化">
         <!-- 建立P2P连接：A监听9998，连接到B的9999 -->
-        <step type="network" action="init" content="172.24.166.144:9999" local_port="9998" />
+        <step type="network" action="init" content="172.24.191.21:9999" local_port="9998" />
         <step type="wait" content="3" />
         
         <!-- 发送就绪信号给B，确认连接已建立 -->
@@ -48,7 +48,7 @@
         <step type="wait" content="0.5" />
         
         <!-- 使用设备4播放testAudioFile中的sine_40.wav文件 -->
-        <step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" />
+        <step type="audio" action="play" content="testAudioFile/sine_40.wav" device="AD 44100" />
         
         <!-- 播放完成后，发送消息给B通知停止录音 -->
         <step type="network" action="send" content="audio_play_end" data="{&quot;file&quot;: &quot;sine_40.wav&quot;, &quot;status&quot;: &quot;completed&quot;}" />

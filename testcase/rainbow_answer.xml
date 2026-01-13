@@ -30,7 +30,7 @@
         
         <!-- 通话建立完成，后续可以添加通话过程中的操作 -->
         <!-- 等待A的audio_play_start消息，确认A准备开始播放 -->
-        <step type="network" action="receive" content="audio_play_start" timeout="30" />
+        <step type="network" action="receive" content="audio_play_start" timeout="60" />
         <step type="wait" content="0.5" />
         
         <!-- 使用设备24异步开始录音（设定足够长的时长） -->
