@@ -138,15 +138,45 @@ def execute_step(step):
             # network receive: 接收消息（阻塞）
             # content: 事件名称 (例如: call_answer)，为空表示接收任何事件
             # 属性: timeout (等待超时秒数，默认30)
+            # 属性: check (验证data内容的JSON条件，可选)
             event_name = content if content else None
             timeout = float(step.get('timeout', 30))
+            check_str = step.get('check', '')
+            
+            # 解析check条件（可选的data验证条件）
+            check_data = {}
+            if check_str:
+                try:
+                    import json
+                    check_data = json.loads(check_str)
+                except Exception as e:
+                    raise RuntimeError(f"check属性JSON解析失败: {check_str}, 错误: {e}")
             
             network = get_network()
             print(f"[DEBUG] 开始等待接收: 事件={event_name}, 超时={timeout}秒")
             message = network.receive(event_name, timeout)
             
             if message:
-                print(f"[NETWORK] ✓ 接收成功: {message}")
+                event = message.get('event')
+                data = message.get('data', {})
+                timestamp = message.get('timestamp')
+                
+                # 验证data内容
+                if check_data:
+                    all_match = True
+                    for key, expected_value in check_data.items():
+                        actual_value = data.get(key)
+                        if actual_value != expected_value:
+                            all_match = False
+                            print(f"[NETWORK] ⚠ data验证失败: {key} 期望={expected_value}, 实际={actual_value}")
+                    
+                    if not all_match:
+                        raise RuntimeError(f"接收消息验证失败: 事件={event}, 期望数据={check_data}, 实际数据={data}")
+                
+                print(f"[NETWORK] ✓ 接收成功")
+                print(f"           事件: {event}")
+                print(f"           数据: {data}")
+                print(f"           时间戳: {timestamp}")
             else:
                 print(f"[NETWORK] ✗ 接收超时或失败: 事件={event_name}, 超时={timeout}秒")
                 raise RuntimeError(f"消息接收失败或超时（事件: {event_name}），停止测试")

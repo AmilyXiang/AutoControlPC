@@ -52,53 +52,53 @@
 
 ### 音频播放 - audio_player.py
 - **单机播放**：支持 WAV、MP3、PCM 等格式
-- **多设备支持**：通过 `device_id` 参数指定输出设备
+- **多设备支持**：通过 `device` 参数指定输出设备
+  - 支持设备ID：`device="4"`
+  - 支持设备名称匹配：`device="AH 22 M 44100"` 会自动查找名称包含"AH 22 M"且采样率为44100的设备
+  - 支持配置别名：在 `device_manager.py` 的 `DEVICE_CONFIG` 中配置
 - **播放时长控制**：可通过 `time` 参数限制播放时长，默认播放完整文件
-- 用法：
-  - `python audio_player.py list` 列出所有输出设备
-  - `python audio_player.py <音频文件> [设备ID]` 播放文件
-- 依赖：simpleaudio、pygame、pydub
+- 依赖：simpleaudio、pygame、pydub、sounddevice
 
 ### 音频录音 - audio_recorder.py
-- **支持列出输入设备**：`python audio_recorder.py list` 
-- **选择设备录音**：`python audio_recorder.py record <设备ID> <时长秒> <输出文件>`
+- **多设备支持**：通过 `device` 参数指定输入设备（支持ID、名称匹配、别名）
 - **异步录音停止**：通过 `stop_record()` 函数主动停止正在进行的录音
 - 依赖：sounddevice、soundfile
-- 多个相同名称的设备是驱动/系统多实例，任选一个能用的即可
 
 ### XML中的音频操作
 ```xml
-<!-- 播放（同步，阻塞） -->
-<step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" />
+<!-- 播放（同步，使用设备ID） -->
+<step type="audio" action="play" content="testAudioFile/sine_40.wav" device="4" />
+
+<!-- 播放（同步，使用设备名称匹配+采样率） -->
+<step type="audio" action="play" content="testAudioFile/sine_40.wav" device="AH 22 M 44100" />
 
 <!-- 播放（同步，限制时长为3秒） -->
-<step type="audio" action="play" content="testAudioFile/sine_40.wav" device_id="4" time="3" />
+<step type="audio" action="play" content="testAudioFile/sine_40.wav" device="4" time="3" />
 
 <!-- 播放（异步，不阻塞后续步骤） -->
-<step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device_id="25" time="5" />
+<step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="headset" time="5" />
 
 <!-- 录音（同步，从设备24录5秒） -->
-<step type="audio" action="record" content="output/record.wav" device_id="24" duration="5" />
+<step type="audio" action="record" content="output/record.wav" device="24" duration="5" />
 
 <!-- 录音（异步，从设备24持续60秒，后续可主动停止） -->
-<step type="audio" action="record_async" content="output/record.wav" device_id="24" duration="60" />
+<step type="audio" action="record_async" content="output/record.wav" device="24" duration="60" />
 
 <!-- 停止正在进行的录音 -->
 <step type="audio" action="stop_record" />
 ```
 
+**设备参数说明：**
+- `device="ID"` - 使用整数设备ID
+- `device="关键字"` - 使用设备名称模糊匹配
+- `device="关键字 采样率"` - 结合采样率过滤，例如 "AH 22 M 44100"
+- 支持在 `device_manager.py` 的 `DEVICE_CONFIG` 中配置别名
+
 ## 其他
 - **requirements.txt**
-  - Python 依赖包列表。
-- **GUIDE.md**
-  - 项目文件说明（本文件）。
+  - Python 依赖包列表
 - **README.md**
-  - 项目简介与使用说明。
-
+  - 项目简介与使用说明
 
 ---
 > 程序结束后会自动清理所有 debug_match_*.png 调试图片。
-如需添加新测试用例，只需在 testcase 文件夹下新增 xml 文件，并用 run_testcase.py 指定执行即可。
-
----
-如需添加新测试用例，只需在testcase文件夹下新增xml文件，并用run_testcase.py指定执行即可。

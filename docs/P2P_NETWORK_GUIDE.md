@@ -57,6 +57,69 @@ DATA = "data"
 - `content`: 对端地址和端口 (格式: `ip:port`)，为空时仅启动本地服务器
 - `local_port`: 本地监听端口（默认9998）
 
+## 消息数据处理指南
+
+### 消息数据结构
+
+每条网络消息都包含以下字段，接收方会自动解析：
+
+```
+[NETWORK] ✓ 接收成功
+           事件: call_answer
+           数据: {'from': 'PC-B', 'status': 'connected'}
+           时间戳: 1234567890.123
+```
+
+### send 中的 data
+
+发送消息时可以附加任意JSON数据：
+
+```xml
+<step type="network" action="send" content="call_answer" 
+      data="{&quot;from&quot;: &quot;PC-B&quot;, &quot;status&quot;: &quot;connected&quot;}" />
+```
+
+### receive 中验证 data
+
+接收消息时可以用 `check` 属性验证接收到的data内容：
+
+```xml
+<!-- 验证data包含指定字段值 -->
+<step type="network" action="receive" content="call_answer" timeout="30"
+      check="{&quot;from&quot;: &quot;PC-B&quot;, &quot;status&quot;: &quot;connected&quot;}" />
+```
+
+**工作流程：**
+1. 接收到消息
+2. 提取 `data` 字段
+3. 对比 `check` 中的每个字段
+4. 若不匹配则抛出异常停止测试
+
+**验证失败示例：**
+```
+RuntimeError: 接收消息验证失败: 事件=call_answer, 期望数据={'from': 'PC-B', ...}, 实际数据={...}
+```
+
+### 常用 data 示例
+
+```xml
+<!-- 状态通知 -->
+<step type="network" action="send" content="ready" 
+      data="{&quot;status&quot;: &quot;online&quot;}" />
+
+<!-- 通话请求 -->
+<step type="network" action="send" content="call_start"
+      data="{&quot;from&quot;: &quot;PC-A&quot;, &quot;to&quot;: &quot;188xxxx&quot;}" />
+
+<!-- 接听确认 -->
+<step type="network" action="send" content="call_answer"
+      data="{&quot;from&quot;: &quot;PC-B&quot;, &quot;status&quot;: &quot;confirmed&quot;}" />
+
+<!-- 音频操作 -->
+<step type="network" action="send" content="audio_play_start"
+      data="{&quot;file&quot;: &quot;test.wav&quot;, &quot;device&quot;: &quot;headset&quot;}" />
+```
+
 #### network send
 ```xml
 <step type="network" action="send" content="call_start" data="{&quot;phone&quot;: &quot;188xx&quot;}" />
@@ -66,10 +129,18 @@ DATA = "data"
 
 #### network receive
 ```xml
+<!-- 简单接收（不验证data） -->
 <step type="network" action="receive" content="call_answer" timeout="30" />
+
+<!-- 接收并验证data内容 -->
+<step type="network" action="receive" content="call_answer" timeout="30" 
+      check="{&quot;status&quot;: &quot;confirmed&quot;}" />
 ```
 - `content`: 等待的事件名称
 - `timeout`: 等待超时时间（秒，默认30）
+- `check`: 验证接收到的data内容（可选，JSON格式）
+  - 如果检查失败，测试会抛出异常并停止
+  - 支持多个字段验证：`check="{&quot;from&quot;: &quot;PC-B&quot;, &quot;status&quot;: &quot;ok&quot;}"`
 
 #### network stop
 ```xml

@@ -188,51 +188,7 @@ AutoControlPC/
 - `audio_play_start` / `audio_play_end` - 音频播放控制
 - `record_stopped` - 录音停止通知
 
-### 3. P2P网络通信（基础示例）
-```xml
-<!-- PC-A：发起通话 -->
-<testcase name="P2P_Caller" description="发起端">
-    <!-- 初始化P2P，连接到PC-B (192.168.1.102:9998) -->
-    <step type="network" action="init" content="192.168.1.102:9998" 
-          local_port="9998" />
-    
-    <!-- 发送"准备就绪"事件 -->
-    <step type="network" action="send" content="ready" 
-          data="{&quot;status&quot;: &quot;online&quot;}" />
-    
-    <!-- 发送"发起通话"事件 -->
-    <step type="network" action="send" content="call_start" 
-          data="{&quot;caller&quot;: &quot;Alice&quot;}" />
-    
-    <!-- 等待对端"接听"事件（超时30秒） -->
-    <step type="network" action="receive" content="call_answer" 
-          timeout="30" />
-    
-    <!-- 关闭网络连接 -->
-    <step type="network" action="stop" content="" />
-</testcase>
-
-<!-- PC-B：接听通话 -->
-<testcase name="P2P_Receiver" description="接听端">
-    <!-- 初始化P2P，监听本地9999端口，不主动连接 -->
-    <step type="network" action="init" content="" local_port="9999" />
-    
-    <!-- 等待"准备就绪"事件 -->
-    <step type="network" action="receive" content="ready" timeout="30" />
-    
-    <!-- 等待"发起通话"事件 -->
-    <step type="network" action="receive" content="call_start" timeout="30" />
-
-    <!-- 发送"接听"事件 -->
-    <step type="network" action="send" content="call_answer" 
-          data="{&quot;receiver&quot;: &quot;Bob&quot;}" />
-    
-    <!-- 关闭网络连接 -->
-    <step type="network" action="stop" content="" />
-</testcase>
-```
-
-### 3. UI自动化
+## 支持的操作类型
 ```xml
 <testcase name="UITest" description="UI操作示例">
     <!-- 点击坐标(100,100) -->
@@ -277,26 +233,31 @@ AutoControlPC/
 | window | maximize_top | 最大化顶部窗口 |
 | wait | - | 延时等待 |
 
-## 网络事件类型
+## 网络事件系统
 
-P2P通信支持的预定义事件（可扩展）：
+P2P通信支持预定义事件和自定义事件。接收消息时可通过 `check` 属性验证 `data` 内容：
 
-```python
-class NetworkEvent(Enum):
-    INIT = "init"              # 连接初始化
-    STOP = "stop"              # 停止连接
-    READY = "ready"            # 就绪信号
-    CALL_START = "call_start"  # 发起通话
-    CALL_ANSWER = "call_answer"# 接听通话
-    CALL_END = "call_end"      # 通话结束
-    AUDIO_START = "audio_start"# 音频开始
-    AUDIO_STOP = "audio_stop"  # 音频停止
-    VIDEO_START = "video_start"# 视频开始
-    VIDEO_STOP = "video_stop"  # 视频停止
-    MESSAGE = "message"        # 自定义消息
-    DATA = "data"              # 数据传输
-    CUSTOM = "custom"          # 用户自定义
+```xml
+<!-- 发送事件（附加JSON数据） -->
+<step type="network" action="send" content="call_start" 
+      data="{&quot;from&quot;: &quot;PC-A&quot;, &quot;phone&quot;: &quot;188xxxx&quot;}" />
+
+<!-- 接收事件（可选验证data） -->
+<step type="network" action="receive" content="call_answer" timeout="30" />
+
+<!-- 接收事件并验证data内容 -->
+<step type="network" action="receive" content="call_answer" timeout="30"
+      check="{&quot;status&quot;: &quot;confirmed&quot;}" />
 ```
+
+**常见事件类型：**
+- `ready` - 就绪信号
+- `call_start` - 发起通话
+- `call_answer` - 接听通话
+- `audio_play_start` - 音频开始
+- `audio_play_end` - 音频结束
+- `record_stopped` - 录音停止
+- 自定义事件 - 任何字符串都可以用作事件名称
 
 ## 使用场景
 

@@ -135,17 +135,23 @@ python my_network_test.py
 ### 音频操作
 
 ```xml
-<!-- 播放音频 -->
+<!-- 播放音频（使用设备ID） -->
 <step type="audio" action="play" content="music.wav" device="0" />
+
+<!-- 播放音频（使用设备名称匹配） -->
+<step type="audio" action="play" content="music.wav" device="headset" />
 
 <!-- 异步播放（不阻塞） -->
 <step type="audio" action="play_async" content="music.wav" device="0" />
 
-<!-- 录音 -->
+<!-- 录音（同步） -->
 <step type="audio" action="record" content="output.wav" device="0" duration="5" />
 
 <!-- 异步录音 -->
 <step type="audio" action="record_async" content="output.wav" device="0" duration="5" />
+
+<!-- 停止录音 -->
+<step type="audio" action="stop_record" />
 ```
 
 ### 网络操作
@@ -162,6 +168,10 @@ python my_network_test.py
 
 <!-- 接收消息（阻塞等待） -->
 <step type="network" action="receive" content="call_answer" timeout="30" />
+
+<!-- 接收消息并验证data内容 -->
+<step type="network" action="receive" content="call_answer" timeout="30"
+      check="{&quot;status&quot;: &quot;confirmed&quot;}" />
 
 <!-- 停止网络 -->
 <step type="network" action="stop" content="" />

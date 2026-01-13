@@ -24,12 +24,10 @@ python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send
 | 你想要... | 查看这个文件 |
 |----------|-----------|
 | 了解项目功能 | [README.md](README.md) |
-| 安装和配置 | [PROJECT_SETUP.md](PROJECT_SETUP.md) |
 | 5分钟教程 | [QUICK_START.md](QUICK_START.md) |
 | 两PC网络配置 | [P2P_NETWORK_GUIDE.md](P2P_NETWORK_GUIDE.md) |
-| 检查文件清单 | [PROJECT_FILES_CHECKLIST.md](PROJECT_FILES_CHECKLIST.md) |
 | 模块详细说明 | [GUIDE.md](GUIDE.md) |
-| 验证安装 | [INSTALL.md](INSTALL.md) |
+| 使用指南 | [QUICK_GUIDE.md](QUICK_GUIDE.md) |
 
 ---
 
