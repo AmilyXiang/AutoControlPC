@@ -193,17 +193,20 @@ def execute_step(step):
             w, h = screen.size
             region = screen.crop((w-200, h-80, w, h))
             status = ocr.find_text_position('英', region)
-            status_cn = ocr.find_text_position('中', region)
-            print(f"[CHECK] OCR识别右下角：'英'={status}, '中'={status_cn}")
+            print(f"[CHECK] OCR识别右下角：'英'={status}")
             need_switch = False
             if content == '英语(美国)':
                 if not status:
                     print("[CHECK] 当前不是英文输入状态，尝试切换...")
                     need_switch = True
+                else:
+                    print("[CHECK] 当前已是英文输入状态，无需切换")
             elif content == '中文(简体，中国)':
-                if not status_cn:
-                    print("[CHECK] 当前不是中文输入状态，尝试切换...")
+                if status:
+                    print("[CHECK] 当前是英文输入状态，需要切换到中文...")
                     need_switch = True
+                else:
+                    print("[CHECK] 当前已不是英文输入状态，无需切换")
             if need_switch:
                 for i in range(5):
                     pyautogui.hotkey('ctrl', 'space')
@@ -211,9 +214,8 @@ def execute_step(step):
                     screen = ImageGrab.grab()
                     region = screen.crop((w-200, h-80, w, h))
                     status = ocr.find_text_position('英', region)
-                    status_cn = ocr.find_text_position('中', region)
-                    print(f"[CHECK] 切换后OCR：'英'={status}, '中'={status_cn}")
-                    if (content == '英语(美国)' and status) or (content == '中文(简体，中国)' and status_cn):
+                    print(f"[CHECK] 切换后OCR：'英'={status}")
+                    if (content == '英语(美国)' and status) or (content == '中文(简体，中国)' and not status):
                         print("[CHECK] 输入法切换成功！")
                         break
                 else:
