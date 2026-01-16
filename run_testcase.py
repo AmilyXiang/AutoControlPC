@@ -206,7 +206,7 @@ def execute_step(step):
                     need_switch = True
             if need_switch:
                 for i in range(5):
-                    pyautogui.hotkey('ctrlleft', 'space')
+                    pyautogui.hotkey('ctrl', 'space')
                     time.sleep(2.0)
                     screen = ImageGrab.grab()
                     region = screen.crop((w-200, h-80, w, h))

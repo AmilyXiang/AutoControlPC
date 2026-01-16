@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="ALE30_performace_test">
+        <!-- ssh登陆到ALE30-->
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="cmd" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
+        <!--step type="window" action="maximize_top" content="" /--> 
+        <!--step type="mouse" action="click" content="left" /-->
+        <step type="check" action="input_method" content="英语(美国)" />
+        <step type="wait" action="sleep" content="2" />
+        <step type="keyboard" action="type_text" content="ssh -o StrictHostKeyChecking=no -L 3768:127.0.0.1:3768 root@30.1.65.135" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="keyboard" action="type_text" content="root" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <!-- 打开QTCreator-->
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="qtcreator" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="3" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/analysis.jpg" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/qmlprofile.jpg" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/confirm.jpg" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+    </testcase>
+</testcases>

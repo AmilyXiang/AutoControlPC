@@ -15,13 +15,26 @@ layout_map = {
 }
 
 def get_keyboard_layout_name():
-    buf = ctypes.create_unicode_buffer(9)
-    res = ctypes.windll.user32.GetKeyboardLayoutNameW(buf)
-    if res:
-        layout = buf.value
-        return layout_map.get(layout, f"未知({layout})")
-    else:
-        return "无法获取输入法布局"
+    """获取前台窗口的键盘布局"""
+    # 获取前台窗口句柄
+    hwnd = ctypes.windll.user32.GetForegroundWindow()
+    if not hwnd:
+        return "无法获取前台窗口"
+    
+    # 获取前台窗口的线程ID
+    thread_id = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, None)
+    if not thread_id:
+        return "无法获取窗口线程"
+    
+    # 获取该线程的键盘布局
+    hkl = ctypes.windll.user32.GetKeyboardLayout(thread_id)
+    if not hkl:
+        return "无法获取键盘布局"
+    
+    # 将HKL转换为布局ID（低16位）
+    layout_id = format(hkl & 0xFFFF, '08X')
+    
+    return layout_map.get(layout_id, f"未知({layout_id})")
 
 if __name__ == '__main__':
     print("当前输入法:", get_keyboard_layout_name())

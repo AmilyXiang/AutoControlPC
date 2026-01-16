@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="ALE30_performace_test">
+        <!-- ssh登陆到ALE30-->
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="cmd" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
+        <!--step type="window" action="maximize_top" content="" /> -->
+        <step type="check" action="input_method" content="英语(美国)" />
+        <step type="wait" action="sleep" content="2" />
+    </testcase>
+</testcases>
