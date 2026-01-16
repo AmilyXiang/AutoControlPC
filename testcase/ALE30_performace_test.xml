@@ -2,6 +2,7 @@
 <testcases>
     <testcase name="ALE30_performace_test">
         <!-- ssh登陆到ALE30-->
+        <step type="check" action="input_method" content="英语(美国)" />
         <step type="keyboard" action="press_key" content="win" />
         <step type="keyboard" action="type_text" content="cmd" />
         <step type="keyboard" action="press_key" content="enter" />
@@ -20,14 +21,55 @@
         <step type="keyboard" action="type_text" content="qtcreator" />
         <step type="keyboard" action="press_key" content="enter" />
         <step type="wait" action="sleep" content="3" />
-        <step type="icon" action="find_and_move" content="png/qtcreator/analysis.jpg" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/analysis_desktop.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
-        <step type="icon" action="find_and_move" content="png/qtcreator/qmlprofile.jpg" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/qmlprofile_desktop.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
-        <step type="icon" action="find_and_move" content="png/qtcreator/confirm.jpg" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/confirm_desktop.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/disable_desktop.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/enable_desktop.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <!-- 话机执行过程-->
+        <step type="icon" action="find_and_move" content="png/qtcreator/cmd_taskbar.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="keyboard" action="type_text" content="key sim KP_2" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="keyboard" action="type_text" content="key sim KP_8" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="keyboard" action="type_text" content="key sim KP_6" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="keyboard" action="type_text" content="key sim KP_3" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="keyboard" action="type_text" content="key sim KP_8" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="keyboard" action="type_text" content="key sim KP_PHONE" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="10" />
+        <step type="keyboard" action="type_text" content="key sim KP_HANGUP" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <!-- 结束流程-->
+        <step type="icon" action="find_and_move" content="png/qtcreator/qtcreator_taskbar.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/disable_desktop.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="10" />
+        <step type="mouse" action="move_mouse" content="1000,600" />
+        <step type="mouse" action="click" content="right" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/save_qml.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />  
+        <step type="keyboard" action="type_text" content="qml_result" />
+        <step type="icon" action="find_and_move" content="png/qtcreator/save_confirm.png" />
+        <step type="mouse" action="click" content="left" />
+        <step type="wait" action="sleep" content="1" />      
     </testcase>
 </testcases>
