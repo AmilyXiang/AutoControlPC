@@ -2,14 +2,23 @@ import sys
 import os
 import pyperclip
 import csv
+import time
 
 def save_clipboard_to_txt(filename):
+    # 支持动态时间变量 {now}
+    if '{now}' in filename:
+        now_str = time.strftime('%Y%m%d_%H%M%S')
+        filename = filename.replace('{now}', now_str)
     content = pyperclip.paste()
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(content)
     print(f"已保存剪贴板内容到 {filename}")
 
 def save_clipboard_to_csv(filename):
+    # 支持动态时间变量 {now}
+    if '{now}' in filename:
+        now_str = time.strftime('%Y%m%d_%H%M%S')
+        filename = filename.replace('{now}', now_str)
     content = pyperclip.paste()
     # 按行分割，每行再按逗号分割
     rows = [row.split(',') for row in content.splitlines()]
