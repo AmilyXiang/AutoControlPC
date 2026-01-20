@@ -29,6 +29,10 @@ def execute_step(step):
         if action == 'press_key':
             pyautogui.press(content)
         elif action == 'type_text':
+            # 支持动态时间变量 {now}
+            if '{now}' in content:
+                now_str = time.strftime('%Y%m%d_%H%M%S')
+                content = content.replace('{now}', now_str)
             pyautogui.typewrite(content, interval=0.1)
     elif step_type == 'mouse':
         if action == 'move_mouse':
@@ -226,8 +230,13 @@ def execute_step(step):
         if action == 'close':
             # 关闭指定进程
             process_name = content
-            from close_process import close_process_by_name
+            from process import close_process_by_name
             close_process_by_name(process_name)
+        elif action == 'runbat':
+            # 运行bat批处理文件
+            bat_path = content
+            from process import run_bat_file
+            run_bat_file(bat_path)
     elif step_type == 'clipboard':
         if action == 'save':
             # 保存剪贴板内容到文件

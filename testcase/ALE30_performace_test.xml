@@ -75,16 +75,16 @@
         <step type="icon" action="find_and_move" content="png/qtcreator/save_qml.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />  
-        <step type="keyboard" action="type_text" content="qml_result" />
+        <step type="keyboard" action="type_text" content="qml_result_{now}" />
         <step type="icon" action="find_and_move" content="png/qtcreator/save_confirm.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" />  
         <step type="icon" action="find_and_move" content="png/qtcreator/copytable_desktop.png" />
         <step type="mouse" action="click" content="left" />
         <step type="wait" action="sleep" content="1" /> 
-        <step type="clipboard" action="save" content="output.csv" format="csv">
+        <step type="clipboard" action="save" content="output_{now}.csv" format="csv">
         <!--close-->
-        <step type="process" action="close" content="Terminal.exe" />
+        <step type="process" action="close" content="WindowsTerminal.exe" />
         <step type="process" action="close" content="qtcreator.exe" />  
     </testcase>
 </testcases>
