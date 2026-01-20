@@ -9,8 +9,8 @@
         <step type="wait" action="sleep" content="1" />
         <!--step type="window" action="maximize_top" content="" /--> 
         <!--step type="mouse" action="click" content="left" /-->
-        <step type="check" action="input_method" content="英语(美国)" />
-        <step type="wait" action="sleep" content="2" />
+        <!--step type="check" action="input_method" content="英语(美国)" />
+        <step type="wait" action="sleep" content="2" /-->
         <step type="keyboard" action="type_text" content="ssh -o StrictHostKeyChecking=no -L 3768:127.0.0.1:3768 root@30.1.65.135" />
         <step type="keyboard" action="press_key" content="enter" />
         <step type="wait" action="sleep" content="1" />
@@ -42,14 +42,19 @@
         <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_2" />
         <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_8" />
         <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_6" />
         <step type="keyboard" action="press_key" content="enter" />
+         <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_3" />
         <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_8" />
         <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="1" />
         <step type="keyboard" action="type_text" content="key sim KP_PHONE" />
         <step type="keyboard" action="press_key" content="enter" />
         <step type="wait" action="sleep" content="10" />

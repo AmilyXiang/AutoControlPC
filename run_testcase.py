@@ -222,6 +222,24 @@ def execute_step(step):
                     print("[CHECK] 输入法切换失败，当前OCR状态未达期望")
             else:
                 print("[CHECK] 当前输入法已是期望值，无需切换")
+    elif step_type == 'process':
+        if action == 'close':
+            # 关闭指定进程
+            process_name = content
+            from close_process import close_process_by_name
+            close_process_by_name(process_name)
+    elif step_type == 'clipboard':
+        if action == 'save':
+            # 保存剪贴板内容到文件
+            fmt = step.get('format', 'txt')
+            filename = content
+            import clipboard_save
+            if fmt == 'txt':
+                clipboard_save.save_clipboard_to_txt(filename)
+            elif fmt == 'csv':
+                clipboard_save.save_clipboard_to_csv(filename)
+            else:
+                print(f"[CLIPBOARD] 暂不支持的格式: {fmt}")
     elif step_type == 'wait':
         if action == 'sleep':
             time.sleep(float(content))
