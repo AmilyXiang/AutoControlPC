@@ -7,11 +7,32 @@ import threading
 import pyautogui
 import sys
 import numpy as np
+from PIL import ImageGrab
 
 
 # OCR工具实例
 from ocr_tool import OcrTool
-ocr = OcrTool(['en', 'ch_sim'], gpu=False)
+ocr = None
+
+
+def get_ocr_tool():
+    """按需初始化OCR，减少程序启动阻塞"""
+    global ocr
+    if ocr is None:
+        print("[OCR] 初始化OCR引擎...")
+        ocr = OcrTool(['en', 'ch_sim'], gpu=False)
+    return ocr
+
+
+def grab_screen_or_raise(context):
+    """统一截图入口，给出Jenkins可执行诊断信息"""
+    try:
+        return ImageGrab.grab()
+    except OSError as e:
+        raise RuntimeError(
+            f"[{context}] 截图失败。Jenkins节点可能运行在非交互会话（服务会话）或桌面已锁屏。"
+            "请使用已登录且保持解锁的桌面会话运行agent。"
+        ) from e
 
 # 设备管理器
 from device_manager import get_device_id
@@ -191,12 +212,12 @@ def execute_step(step):
             stop_network()
     elif step_type == 'check':
         if action == 'input_method':
-            from PIL import ImageGrab
             import auto_controller as ac
-            screen = ImageGrab.grab()
+            ocr_tool = get_ocr_tool()
+            screen = grab_screen_or_raise('CHECK')
             w, h = screen.size
             region = screen.crop((w-200, h-80, w, h))
-            status = ocr.find_text_position('英', region)
+            status = ocr_tool.find_text_position('英', region)
             print(f"[CHECK] OCR识别右下角：'英'={status}")
             need_switch = False
             if content == '英语(美国)':
@@ -215,9 +236,9 @@ def execute_step(step):
                 for i in range(5):
                     pyautogui.hotkey('ctrl', 'space')
                     time.sleep(2.0)
-                    screen = ImageGrab.grab()
+                    screen = grab_screen_or_raise('CHECK')
                     region = screen.crop((w-200, h-80, w, h))
-                    status = ocr.find_text_position('英', region)
+                    status = ocr_tool.find_text_position('英', region)
                     print(f"[CHECK] 切换后OCR：'英'={status}")
                     if (content == '英语(美国)' and status) or (content == '中文(简体，中国)' and not status):
                         print("[CHECK] 输入法切换成功！")
@@ -255,10 +276,10 @@ def execute_step(step):
     elif step_type == 'ocr':
         if action == 'find_and_click':
             time.sleep(2)
-            from PIL import ImageGrab
             import auto_controller as ac
-            screenshot = ImageGrab.grab()
-            pos = ocr.find_text_position(content, screenshot)
+            ocr_tool = get_ocr_tool()
+            screenshot = grab_screen_or_raise('OCR')
+            pos = ocr_tool.find_text_position(content, screenshot)
             if pos:
                 print(f"[OCR] 找到'{content}'，点击位置: {pos}")
                 ac.move_mouse(pos[0], pos[1], duration=0.5)
@@ -266,7 +287,7 @@ def execute_step(step):
             else:
                 print(f"[OCR] 未找到'{content}'，跳过点击")
                 print("[OCR] 本次截图所有识别结果：")
-                results = ocr.reader.readtext(np.array(screenshot))
+                results = ocr_tool.reader.readtext(np.array(screenshot))
                 for bbox, text, conf in results:
                     print(f"  文本: '{text}'  置信度: {conf:.2f}")
                 screenshot.save(f"ocr_debug_{content}.png")
