@@ -19,15 +19,15 @@ def print_header(text):
 
 def print_success(text):
     """打印成功信息"""
-    print(f"  ✅ {text}")
+    print(f"  [OK] {text}")
 
 def print_error(text):
     """打印错误信息"""
-    print(f"  ❌ {text}")
+    print(f"  [FAIL] {text}")
 
 def print_warning(text):
     """打印警告信息"""
-    print(f"  ⚠️  {text}")
+    print(f"  [WARN] {text}")
 
 def check_file_exists(path, name):
     """检查文件是否存在"""
@@ -134,8 +134,8 @@ def main():
         testcases = list(testcases_dir.glob("*.xml"))
         if testcases:
             print_success(f"找到 {len(testcases)} 个测试用例")
-            for tc in sorted(testcases):
-                print(f"    • {tc.name}")
+                for tc in sorted(testcases):
+                    print(f"    - {tc.name}")
         else:
             print_warning("testcase 文件夹为空")
     else:
@@ -204,7 +204,7 @@ def main():
     
     if all_ok and not missing_packages:
         print_success("所有检查通过！项目已完全准备好使用。")
-        print("\n📝 下一步建议：")
+        print("\n[INFO] 下一步建议：")
         print("  1. 运行：python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send")
         print("  2. 阅读：README.md 和 QUICK_START.md")
         print("  3. 学习：查看 testcase/ 中的XML示例")
@@ -213,9 +213,9 @@ def main():
         print_error("检查发现问题，请修复后重试")
         
         if missing_packages:
-            print("\n❌ 缺少以下Python包：")
+            print("\n[FAIL] 缺少以下Python包：")
             for pkg in missing_packages:
-                print(f"  • {pkg}")
+                print(f"  - {pkg}")
             print("\n修复方法：")
             print("  pip install -r requirements.txt")
             

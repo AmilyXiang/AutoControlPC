@@ -110,9 +110,9 @@ def execute_step(step):
                 else:
                     print(f"[NETWORK] 初始化网络: 本地端口={local_port}（仅启动服务器）")
                     init_network(local_port=local_port)
-                print(f"[NETWORK] ✓ 网络初始化成功")
+                print(f"[NETWORK] [OK] 网络初始化成功")
             except Exception as e:
-                print(f"[NETWORK] ✗ 网络初始化失败: {e}")
+                print(f"[NETWORK] [FAIL] 网络初始化失败: {e}")
                 raise RuntimeError(f"网络初始化失败，停止测试: {e}")
         
         elif action == 'send':
@@ -135,7 +135,7 @@ def execute_step(step):
             print(f"[NETWORK] 发送消息: {event_name}, 成功={success}")
             
             if not success:
-                print(f"[NETWORK] ✗ 消息发送失败")
+                print(f"[NETWORK] [FAIL] 消息发送失败")
                 raise RuntimeError(f"消息发送失败（事件: {event_name}），停止测试")
         
         elif action == 'receive':
@@ -172,17 +172,17 @@ def execute_step(step):
                         actual_value = data.get(key)
                         if actual_value != expected_value:
                             all_match = False
-                            print(f"[NETWORK] ⚠ data验证失败: {key} 期望={expected_value}, 实际={actual_value}")
+                            print(f"[NETWORK] [WARN] data验证失败: {key} 期望={expected_value}, 实际={actual_value}")
                     
                     if not all_match:
                         raise RuntimeError(f"接收消息验证失败: 事件={event}, 期望数据={check_data}, 实际数据={data}")
                 
-                print(f"[NETWORK] ✓ 接收成功")
+                print(f"[NETWORK] [OK] 接收成功")
                 print(f"           事件: {event}")
                 print(f"           数据: {data}")
                 print(f"           时间戳: {timestamp}")
             else:
-                print(f"[NETWORK] ✗ 接收超时或失败: 事件={event_name}, 超时={timeout}秒")
+                print(f"[NETWORK] [FAIL] 接收超时或失败: 事件={event_name}, 超时={timeout}秒")
                 raise RuntimeError(f"消息接收失败或超时（事件: {event_name}），停止测试")
         
         elif action == 'stop':

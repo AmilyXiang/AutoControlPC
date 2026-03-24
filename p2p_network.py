@@ -93,7 +93,7 @@ class P2PNetwork:
             self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
             self.receive_thread.start()
             
-            print(f"[P2P] ✓ 接收服务器启动")
+            print(f"[P2P] [OK] 接收服务器启动")
             print(f"[P2P]   本地端口: {self.local_port}")
             print(f"[P2P]   可连接地址: {self.local_ip}:{self.local_port}")
         except Exception as e:
@@ -163,7 +163,7 @@ class P2PNetwork:
                 self.client_socket.settimeout(10)  # 设置10秒连接超时
                 self.client_socket.connect((self.peer_host, self.peer_port))
                 self.client_socket.settimeout(None)  # 连接成功后移除超时
-                print(f"[P2P] ✓ 已连接到对端 {self.peer_host}:{self.peer_port}")
+                print(f"[P2P] [OK] 已连接到对端 {self.peer_host}:{self.peer_port}")
                 return True
             except socket.timeout:
                 print(f"[P2P] 连接超时 (WinError 10060)，{retry_delay}秒后重试...")
@@ -171,7 +171,7 @@ class P2PNetwork:
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
-                    print(f"[P2P] ✗ 连接失败: 达到最大重试次数")
+                    print(f"[P2P] [FAIL] 连接失败: 达到最大重试次数")
                     return False
             except Exception as e:
                 print(f"[P2P] 连接失败: {e}")

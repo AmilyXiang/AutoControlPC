@@ -274,7 +274,7 @@ class ScriptBuilder:
                 print(f"  [{idx + 1}/{len(self.actions)}] {action_type} 完成")
             
             except Exception as e:
-                print(f"  ✗ 操作失败: {e}")
+                print(f"  [FAIL] 操作失败: {e}")
                 return False
         
         print("脚本执行完成")

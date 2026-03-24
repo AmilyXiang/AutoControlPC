@@ -148,7 +148,7 @@ def find_device_by_name(device_name, selection_strategy='best'):
                 # 按评分排序后显示
                 sorted_devices = sorted(matching_devices, key=lambda x: _device_score(x[1]), reverse=True)
                 for dev_id, dev_info in sorted_devices:
-                    marker = "✓ 已选" if dev_id == idx else "  "
+                    marker = "[Selected]" if dev_id == idx else "          "
                     channels = max(dev_info['max_output_channels'], dev_info['max_input_channels'])
                     print(f"  {marker} [ID {dev_id:2d}] 采样率 {int(dev_info['default_samplerate']):5d} Hz, {channels}通道 - {dev_info['name'][:50]}")
             
@@ -227,9 +227,9 @@ if __name__ == '__main__':
         device_name = sys.argv[2]
         device_id, device_info = find_device_by_name(device_name)
         if device_id is not None:
-            print(f"✓ 找到设备: ID={device_id}, 名称={device_info['name']}")
+            print(f"[OK] 找到设备: ID={device_id}, 名称={device_info['name']}")
         else:
-            print(f"✗ 未找到设备: {device_name}")
+            print(f"[FAIL] 未找到设备: {device_name}")
     elif command == 'config' and len(sys.argv) > 3:
         nickname = sys.argv[2]
         device_id = int(sys.argv[3])
