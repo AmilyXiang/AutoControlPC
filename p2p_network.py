@@ -49,13 +49,20 @@ class P2PNetwork:
         self.local_ip = self._get_local_ip()
         
         # 启动接收服务器
-        self._start_server()
+        server_ok = self._start_server()
         
         # 尝试连接到对端
-        self._connect_to_peer()
-        
-        print(f"[P2P] 网络已初始化 - 本地:{self.local_port}, 对端:{peer_host}:{peer_port}")
-        return True
+        connect_ok = self._connect_to_peer()
+
+        if server_ok:
+            if connect_ok:
+                print(f"[P2P] 网络已初始化 - 本地:{self.local_port}, 对端:{peer_host}:{peer_port}")
+            else:
+                print(f"[P2P] [WARN] 本地监听已启动，但暂未连接到对端 {peer_host}:{peer_port}")
+            return True
+
+        print(f"[P2P] [FAIL] 网络初始化失败: 本地端口 {self.local_port} 监听未成功")
+        return False
 
     def _get_local_ip(self):
         """获取本机可用的IP地址"""
@@ -96,6 +103,7 @@ class P2PNetwork:
             print(f"[P2P] [OK] 接收服务器启动")
             print(f"[P2P]   本地端口: {self.local_port}")
             print(f"[P2P]   可连接地址: {self.local_ip}:{self.local_port}")
+            return True
         except Exception as e:
             print(f"[P2P] 启动接收服务器失败: {e}")
             return False
@@ -153,8 +161,8 @@ class P2PNetwork:
             print(f"[P2P] 跳过连接: peer_host为空")
             return False
         
-        max_retries = 5
-        retry_delay = 1
+        max_retries = 10
+        retry_delay = 5
         
         for attempt in range(max_retries):
             try:
