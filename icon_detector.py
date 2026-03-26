@@ -5,11 +5,13 @@ icon_detector.py
 """
 import cv2
 import numpy as np
+import os
 from PIL import ImageGrab, Image
 
 class IconDetector:
     def __init__(self, threshold=0.8):
         self.threshold = threshold  # 匹配阈值，越高越严格
+        self.debug_dir = os.path.join('png', 'debug')
 
     def find_icons(self, template_path, screenshot=None, max_results=5):
         """
@@ -34,6 +36,8 @@ class IconDetector:
         res = cv2.matchTemplate(img_gray, template_gray, cv2.TM_CCOEFF_NORMED)
         loc = np.where(res >= self.threshold)
         matches = []
+        debug_files = []
+        os.makedirs(self.debug_dir, exist_ok=True)
         for idx, pt in enumerate(zip(*loc[::-1])):
             center_x = pt[0] + w // 2
             center_y = pt[1] + h // 2
@@ -43,12 +47,20 @@ class IconDetector:
             crop = img_rgb[pt[1]:pt[1]+h, pt[0]:pt[0]+w]
             try:
                 crop_img = Image.fromarray(crop)
-                crop_img.save(f"debug_match_{idx+1}.png")
+                debug_path = os.path.join(self.debug_dir, f"debug_match_{idx+1}.png")
+                crop_img.save(debug_path)
+                debug_files.append(debug_path)
             except Exception as e:
                 print(f"保存匹配区域截图失败: {e}")
         # 去重（防止重叠区域多次计数）
         matches = self._nms(matches, w, h)
         matches = sorted(matches, key=lambda x: -x[2])[:max_results]
+        if matches:
+            for debug_path in debug_files:
+                try:
+                    os.remove(debug_path)
+                except OSError as e:
+                    print(f"删除调试截图失败: {e}")
         return matches
 
     def _nms(self, matches, w, h, iou_thresh=0.3):
