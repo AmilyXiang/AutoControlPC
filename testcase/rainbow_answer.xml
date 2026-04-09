@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
     <testcase name="rainbow自动接听">
-        <!-- 建立P2P连接：B监听9999，连接到A的172.34.191.34:9998 -->
-        <step type="network" action="init" content="172.24.191.34:9998" local_port="9999" />
+        <!-- 建立P2P连接：B监听9999，连接到A的135.251.222.228:9998 -->
+        <step type="network" action="init" content="135.251.222.228:9998" local_port="9999" />
         <step type="wait" content="3" />
         
         <!-- 等待A的就绪信号 -->
@@ -17,13 +17,16 @@
         
         <!-- 连接确认完成，开始等待来电 -->
         <!-- 等待来电弹窗出现，可根据实际情况调整等待时间 -->
-        <step type="wait" action="sleep" content="5" />
+        <step type="wait" action="sleep" content="8" />
         <!-- OCR查找并点击“接听”按钮，按钮文字可根据实际界面调整，如“接听”、“Answer”等 -->
         <step type="icon" action="find_and_move" content="png/rainbow/accept.png" />
         <!--step type="ocr" action="find_and_click" content="Accept" /-->
         <step type="mouse" action="click" content="left" />
         <step type="wait" content="1" />
         
+        <!--确认接听成功-->
+        <step type="icon" action="search" content="png/rainbow/communicate.png" timeout="30" />
+
         <!-- 向A发送call_answer信号，确认已接听，通话建立 -->
         <step type="network" action="send" content="call_answer" data="{&quot;from&quot;: &quot;B&quot;}" />
         <step type="wait" content="1" />
@@ -34,7 +37,7 @@
         <step type="wait" content="0.5" />
         
         <!-- 使用设备24异步开始录音（设定足够长的时长） -->
-        <step type="audio" action="record_async" content="testAudioFile/record_sine_40.wav" device_id="24" duration="60" />
+        <step type="audio" action="record_async" content="testAudioFile/record_rb.wav" device_id="1" duration="30" />
         
         <!-- 等待A的audio_play_end消息，确认播放已结束 -->
         <step type="network" action="receive" content="audio_play_end" timeout="60" />

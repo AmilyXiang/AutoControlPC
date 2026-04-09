@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="wmplayer主流程自动化open and play music" author="Landy" date="2025-02-24">
+        <step type="keyboard" action="press_key" content="win" />
+        <step type="keyboard" action="type_text" content="wmplayer" />
+        <step type="keyboard" action="press_key" content="enter" />
+        <step type="wait" action="sleep" content="5" />
+        <step type="icon" action="find_and_move" content="png/wmplayer/wmplayer_play.png" />
+        <step type="mouse" action="click" content="left" />
+    </testcase>
+</testcases>
