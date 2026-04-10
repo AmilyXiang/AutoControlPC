@@ -9,14 +9,14 @@
         -->
         <step type="wait" action="sleep" content="1" />
         
-        <!-- 使用数字ID方式 -->
-        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="25" />
-        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_1.wav" device="24" duration="30" />
-        <step type="wait" action="sleep" content="6" />
+        <!-- 使用数字ID方式 
+        <step type="audio" action="play_async" content="testAudioFile/RFR_140.wav" device="3" />
+        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_1.wav" device="2" duration="26" />
+        <step type="wait" action="sleep" content="6" />-->
         
-        <!-- 第二轮：可以使用字符串标识设备 -->
-        <step type="audio" action="play_async" content="testAudioFile/sine_40.wav" device="speakers" />
-        <step type="audio" action="record_async" content="testAudioFile/recorded_simultaneous_2.wav" device="microphone" duration="30" />
-        <step type="wait" action="sleep" content="6" />
+        <!-- 第二轮：可以使用字符串标识设备-->
+        <step type="audio" action="play_async" content="testAudioFile/RFR_140.wav" device="ALE-400" />
+        <step type="audio" action="record" content="testAudioFile/recorded_simultaneous_2.wav" device="1" duration="32" />
+        <step type="wait" action="sleep" content="6" /> 
     </testcase>
 </testcases>
