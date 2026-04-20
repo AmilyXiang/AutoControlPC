@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="DECT_8262_拨号测试">
+        <!-- 1. 初始化 DECT 控制器 (指定型号和串口) -->
+        <step type="dect" action="init" content="8262" com_port="COM3" />
+        <step type="wait" action="sleep" content="1" />
+
+        <!-- 2. 拨号: 10000 -->
+        <step type="dect" action="press_key" content="1" />
+        <step type="wait" action="sleep" content="0.5" />
+        <step type="dect" action="press_key" content="0" />
+        <step type="wait" action="sleep" content="0.5" />
+        <step type="dect" action="press_key" content="0" />
+        <step type="wait" action="sleep" content="0.5" />
+        <step type="dect" action="press_key" content="0" />
+        <step type="wait" action="sleep" content="0.5" />
+        <step type="dect" action="press_key" content="0" />
+        <step type="wait" action="sleep" content="1" />
+
+        <!-- 3. 验证屏幕显示拨出的号码 -->
+        <step type="dect" action="verify_screen" content='{"text": "10000"}' />
+
+        <!-- 4. 摘机（拨出） -->
+        <step type="dect" action="press_key" content="offhook" />
+        <step type="wait" action="sleep" content="5" />
+
+        <!-- 5. 验证通话状态 -->
+        <step type="dect" action="capture" />
+
+        <!-- 6. 挂机 -->
+        <step type="dect" action="press_key" content="onhook" />
+        <step type="wait" action="sleep" content="2" />
+
+        <!-- 7. 回原点并关闭 -->
+        <step type="dect" action="origin" />
+        <step type="dect" action="close" />
+    </testcase>
+</testcases>

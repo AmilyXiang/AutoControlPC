@@ -309,6 +309,35 @@ def execute_step(step):
                 MouseController().move_to(x, y, duration=0.3)
             else:
                 print(f"[ICON] 未检测到图标: {content}")
+    elif step_type == 'dect':
+        from dect_controller import init_dect_controller, get_dect_controller, close_dect_controller
+        if action == 'init':
+            # content: 设备型号 (例如: 8262)
+            model = content if content else '8262'
+            com_port = step.get('com_port')
+            init_dect_controller(model=model, com_port=com_port)
+        elif action == 'press_key':
+            # content: 按键名 (例如: 1, hangup, ok)
+            press_type = step.get('press_type', 'short')
+            ctrl = get_dect_controller()
+            ctrl.press_key(content, press_type=press_type)
+        elif action == 'verify_screen':
+            # content: JSON格式的期望结果 (例如: {"text": "10000", "signal": true})
+            import json
+            ctrl = get_dect_controller()
+            expected = json.loads(content)
+            success = ctrl.verify_screen(expected)
+            if not success:
+                print(f"[DECT] [FAIL] 屏幕验证失败")
+        elif action == 'capture':
+            # 仅拍照分析，不验证
+            ctrl = get_dect_controller()
+            ctrl.capture_and_analyze()
+        elif action == 'origin':
+            ctrl = get_dect_controller()
+            ctrl.origin()
+        elif action == 'close':
+            close_dect_controller()
     time.sleep(0.3)
 
 def execute_testcases(xml_path, testcase_name=None):
