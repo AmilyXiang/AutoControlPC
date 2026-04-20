@@ -37,18 +37,17 @@ class Yolo_icon_text:
 class Paddle_ocr:
     def __init__(self):
         self.ocr = PaddleOCR(
-            use_angle_cls=True, 
-            lang='latin', 
-            use_gpu=False, 
-            enable_mkldnn=True,
-            cpu_threads=6       
+            lang='en',
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=True,
         )
     def preprocess_crop(self, crop_img):
         denoised = cv2.medianBlur(crop_img, 5)
         return denoised
     def process_screen_ocr(self, img_np):
         try:
-            result = self.ocr.ocr(img_np, det=False, cls=True)
+            result = self.ocr.ocr(img_np)
             if not result or result[0] is None:
                 print("未发现任何文字")
                 return []

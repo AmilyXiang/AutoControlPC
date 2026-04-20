@@ -46,6 +46,7 @@ class DectController:
             from dect.image.getImage import CameraGrabber
             from dect.image.analyze import Analyze_icon_text
             self.grabber = CameraGrabber()
+            self.grabber.start_grabbing()
             self.analyzer = Analyze_icon_text()
             print("[DECT] 视觉子系统初始化完成")
 
@@ -88,13 +89,21 @@ class DectController:
         """
         self._ensure_vision()
         from dect.image.cut_image import straighten_screen_from_np
-        self.grabber.start_grabbing()
+        import cv2, os, time as _time
         img_color = self.grabber.grab_image()
-        self.grabber.stop_grabbing()
         if img_color is None:
             print("[DECT] 抓图失败")
             return {}
+        # 保存调试图片
+        debug_dir = os.path.join(os.path.dirname(__file__), "png", "debug")
+        os.makedirs(debug_dir, exist_ok=True)
+        debug_path = os.path.join(debug_dir, f"capture_{int(_time.time())}.png")
+        cv2.imwrite(debug_path, img_color)
+        print(f"[DECT] 调试图片已保存: {debug_path}")
         img_cut = straighten_screen_from_np(img_color)
+        if img_cut is None:
+            print("[DECT] 屏幕矫正失败，使用原始图像进行分析")
+            img_cut = img_color
         self.analyzer.get_results(img_cut)
         result = self.analyzer.get_icon_text()
         print(f"[DECT] 分析结果: {result}")
@@ -131,6 +140,7 @@ class DectController:
     def close(self):
         """Release all hardware resources."""
         if self.grabber:
+            self.grabber.stop_grabbing()
             self.grabber.close()
         self.ser.close()
         self.mover.origin()

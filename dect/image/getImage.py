@@ -93,8 +93,8 @@ class CameraGrabber():
         ret = self.cam.MV_CC_CreateHandle(stDeviceList)
         if ret != 0:
             raise Exception ("create handle fail! ret[0x%x]" % ret)
-        self.cam.MV_CC_SetEnumValue("ExposureAuto", 1)
-        self.cam.MV_CC_SetFloatValue("ExposureTime", float(60))
+        self.cam.MV_CC_SetEnumValue("ExposureAuto", 0)
+        self.cam.MV_CC_SetFloatValue("ExposureTime", float(50000))
 
         ret = self.cam.MV_CC_OpenDevice(MV_ACCESS_Exclusive, 0)
         if ret != 0:

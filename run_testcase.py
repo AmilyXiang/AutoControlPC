@@ -350,8 +350,20 @@ def execute_testcases(xml_path, testcase_name=None):
         if testcase_name and tc_name != testcase_name:
             continue
         print(f"\n开始执行用例: {tc_name}")
-        for step in testcase.findall('step'):
-            execute_step(step)
+        try:
+            for step in testcase.findall('step'):
+                execute_step(step)
+        except Exception as e:
+            print(f"[ERROR] 用例 '{tc_name}' 执行出错: {e}")
+            # 报错时尝试让 DECT 机械回原点
+            try:
+                from dect_controller import get_dect_controller
+                ctrl = get_dect_controller()
+                ctrl.origin()
+                print("[DECT] 异常恢复：已回原点")
+            except Exception:
+                pass
+            raise
         print(f"用例 '{tc_name}' 执行完毕\n")
         # 删除执行过程中生成的图片等文件
         patterns = ["last_rainbow_screenshot.png", "after_cui_ji_click.png", "after_call_click.png"]

@@ -6,7 +6,7 @@ pynput>=1.7.6
 
 # Image Processing & Screenshots
 Pillow>=9.0.0
-numpy>=1.20.0,<2.0.0
+numpy>=1.20.0
 opencv-python>=4.5.0
 
 # OCR & Text Recognition
@@ -30,8 +30,8 @@ ultralytics>=8.4.31
 openvino>=2026.0.0
 
 # DECT Vision - PaddleOCR Text Recognition
-paddlepaddle==2.6.2
-paddleocr==2.7.0
+paddlepaddle>=3.0.0
+paddleocr>=3.0.0
 
 # Optional: Testing
 pytest>=7.0.0

@@ -94,6 +94,9 @@ def straighten_screen_from_np(img):
         if len(approx) == 4:
             screen_cnt = approx
             break
+    if screen_cnt is None:
+        print("[DECT] 未检测到屏幕轮廓（四边形），请检查摄像头画面和光照条件")
+        return None
     rect_pts = order_points(screen_cnt)
 
     warped = get_warped_image(img, screen_cnt)
