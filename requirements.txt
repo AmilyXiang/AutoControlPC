@@ -2,36 +2,37 @@
 
 # UI Automation & Control
 pyautogui==0.9.53
-pynput>=1.7.6
+pynput==1.8.1
 
 # Image Processing & Screenshots
-Pillow>=9.0.0
-numpy>=1.20.0
-opencv-python>=4.5.0
+Pillow==12.1.0
+numpy==2.4.4
+opencv-python==4.13.0.90
 
 # OCR & Text Recognition
-easyocr>=1.6.0
+easyocr==1.7.2
 
 # Audio Playback & Recording
-pygame>=2.0.0
-pydub>=0.25.1
+pygame==2.6.1
+pydub==0.25.1
 # simpleaudio>=1.0.4
-sounddevice>=0.4.6
-soundfile>=0.12.1
+sounddevice==0.5.3
+soundfile==0.13.1
+librosa==0.11.0
 
 # Windows Specific Operations
-pywin32>=306
+pywin32==311
 
 # Serial Communication (DECT CNC motion control)
-pyserial>=3.5
+pyserial==3.5
 
 # DECT Vision - YOLO Object Detection
-ultralytics>=8.4.31
-openvino>=2026.0.0
+ultralytics==8.4.39
+openvino==2026.1.0
 
 # DECT Vision - PaddleOCR Text Recognition
-paddlepaddle>=3.0.0
-paddleocr>=3.0.0
+paddlepaddle==3.0.0
+paddleocr==3.4.1
 
 # Optional: Testing
-pytest>=7.0.0
+pytest==9.0.2

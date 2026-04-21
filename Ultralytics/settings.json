@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "D:\\AutoControlPC\\datasets",
+  "weights_dir": "D:\\AutoControlPC\\AutoControlPC\\weights",
+  "runs_dir": "D:\\AutoControlPC\\AutoControlPC\\runs",
+  "uuid": "0b80817a9cd56d84e53e0eb1c93e21d9d39cbb6297aa85765ad1a41a90eccd07",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

@@ -46,12 +46,32 @@ class Paddle_ocr:
         denoised = cv2.medianBlur(crop_img, 5)
         return denoised
     def process_screen_ocr(self, img_np):
+        """
+        对图片进行OCR识别，返回 [(text, score), ...] 格式的结果。
+        适配 PaddleOCR 3.x 新返回格式。
+        """
         try:
             result = self.ocr.ocr(img_np)
-            if not result or result[0] is None:
+            if not result:
                 print("未发现任何文字")
                 return []
-            return result
+            # PaddleOCR 3.x 返回 list of dict，每个 dict 含 rec_texts, rec_scores
+            texts = []
+            for page in result:
+                if page is None:
+                    continue
+                if isinstance(page, dict):
+                    rec_texts = page.get('rec_texts', [])
+                    rec_scores = page.get('rec_scores', [])
+                    for t, s in zip(rec_texts, rec_scores):
+                        texts.append((t, s))
+                else:
+                    # 兼容旧格式 [[box, (text, score)], ...]
+                    if isinstance(page, list):
+                        for line in page:
+                            if line and len(line) >= 2:
+                                texts.append((str(line[1][0]), float(line[1][1])))
+            return texts
         except Exception as e:
             print(f"解析出错: {e}")
             return []
@@ -72,21 +92,25 @@ class Analyze_icon_text:
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] != "text":
-                    if self.model.names[int(box.cls)] not in res_dect:
-                        res_dect[self.model.names[int(box.cls)]] = []
-                    res_dect[self.model.names[int(box.cls)]].append(box.xyxy[0].cpu().numpy().astype(int))
+                cls_name = self.model.names[int(box.cls)]
+                if cls_name != "text":
+                    if cls_name not in res_dect:
+                        res_dect[cls_name] = []
+                    res_dect[cls_name].append(box.xyxy[0].cpu().numpy().astype(int))
                 else:
-                    image_text = self.img[box.xyxy[0][1].cpu().numpy().astype(int):box.xyxy[0][3].cpu().numpy().astype(int), box.xyxy[0][0].cpu().numpy().astype(int):box.xyxy[0][2].cpu().numpy().astype(int)]
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                    image_text = self.img[y1:y2, x1:x2]
                     img_for_ocr = self.ocr.preprocess_crop(image_text)
-                    print(img_for_ocr.shape, img_for_ocr.dtype)
+                    print(f"[OCR] 裁剪区域: ({x1},{y1})-({x2},{y2}), shape={img_for_ocr.shape}")
                     
                     if img_for_ocr is None:
                         print("错误：无法加载图片，请检查路径是否正确。")
-                    result = self.ocr.process_screen_ocr(img_for_ocr)
-                    if result:
-                        for i, res in enumerate(result):
-                            if self.model.names[int(box.cls)] not in res_dect:
-                                res_dect[self.model.names[int(box.cls)]] = []
-                            res_dect[self.model.names[int(box.cls)]].append(res[0][0])
+                        continue
+                    ocr_result = self.ocr.process_screen_ocr(img_for_ocr)
+                    if ocr_result:
+                        if "text" not in res_dect:
+                            res_dect["text"] = []
+                        for text_str, confidence in ocr_result:
+                            print(f"[OCR] 识别文字: '{text_str}' (置信度: {confidence:.4f})")
+                            res_dect["text"].append(text_str)
         return res_dect

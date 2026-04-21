@@ -264,7 +264,7 @@ class CameraOperation:
         if self.b_open_device:
             ret = self.obj_cam.MV_CC_SetEnumValue("ExposureAuto", 0)
             time.sleep(0.2)
-            ret = self.obj_cam.MV_CC_SetFloatValue("ExposureTime", float(exposureTime))
+            ret = self.obj_cam.MV_CC_SetFloatValue("ExposureTime", 50000.0000)
             if ret != 0:
                 print('show error', 'set exposure time fail! ret = ' + To_hex_str(ret))
                 return ret

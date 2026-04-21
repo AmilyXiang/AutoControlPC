@@ -1,0 +1,192 @@
+// Jenkins scripted pipeline for parallel Rainbow call/answer stress test on Windows agents.
+// Usage:
+// 1) Configure two Jenkins nodes with labels: rainbow-call and rainbow-answer
+// 2) Point WORKSPACE_DIR to your repository path on each node
+// 3) Ensure Python venv exists and dependencies are installed
+
+properties([
+  parameters([
+    string(name: 'LOOPS', defaultValue: '50', description: 'Stress loop count'),
+    string(name: 'WORKSPACE_DIR', defaultValue: 'D:\\AutoControlPC\\AutoControlPC', description: 'Repo path on answer node'),
+    string(name: 'CALL_WORKSPACE_DIR', defaultValue: 'C:\\AutoControlPC\\AutoControlPC', description: 'Repo path on call node'),
+    string(name: 'CALL_NODE', defaultValue: 'TTA_TDM_Slave_05', description: 'Jenkins node label for call side'),
+    string(name: 'ANSWER_NODE', defaultValue: 'AudioSeverAudioHub', description: 'Jenkins node label for answer side'),
+    string(name: 'PYTHON_EXE', defaultValue: '.venv\\Scripts\\python.exe', description: 'Python executable relative to WORKSPACE_DIR'),
+    string(name: 'PYTHON_EXE_TDM', defaultValue: 'C:\\Users\\TTA\\AppData\\Local\\Microsoft\\WindowsApps\\python3.12.exe', description: 'Python executable relative to WORKSPACE_DIR'),
+    string(name: 'PYTHON_EXE_AUDIOHUB', defaultValue: 'C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe', description: 'Python executable relative to WORKSPACE_DIR'),
+    booleanParam(name: 'RUN_NISQA', defaultValue: true, description: 'Run NISQA analysis after stress test on answer node'),
+    booleanParam(name: 'PUBLISH_HTML_REPORT', defaultValue: true, description: 'Generate and publish Jenkins HTML summary report')
+  ])
+])
+
+def loops = params.LOOPS as Integer
+
+def callNode = params.CALL_NODE
+
+def answerNode = params.ANSWER_NODE
+
+def wsDir = params.WORKSPACE_DIR
+def callWsDir = params.CALL_WORKSPACE_DIR
+
+def pyExe = params.PYTHON_EXE
+
+def pyExeTDM = params.PYTHON_EXE_TDM
+def pyExeAudio = params.PYTHON_EXE_AUDIOHUB
+
+def answerOutDir = "${wsDir}\\testAudioFile\\record${new Date().format('yyyyMMdd')}"
+
+node('built-in') {
+  stage('Plan') {
+    echo "LOOPS=${loops}"
+    echo "CALL_NODE=${callNode}, ANSWER_NODE=${answerNode}"
+    echo "ANSWER_WORKSPACE_DIR=${wsDir}"
+    echo "CALL_WORKSPACE_DIR=${callWsDir}"
+    echo "Answer recordings => ${answerOutDir}"
+  }
+}
+
+for (int i = 1; i <= loops; i++) {
+  stage("Loop ${i}/${loops}") {
+    parallel failFast: false,
+      "Answer-${i}": {
+        node(answerNode) {
+          timeout(time: 10, unit: 'MINUTES') {
+            bat """
+              cd /d "${wsDir}"
+              if not exist "${answerOutDir}" mkdir "${answerOutDir}"
+              "${pyExeAudio}" run_testcase.py testcase\\rainbow_answer.xml
+            """
+          }
+        }
+      },
+      "Call-${i}": {
+        node(callNode) {
+          timeout(time: 10, unit: 'MINUTES') {
+            bat """
+              cd /d "${callWsDir}"
+              echo [INFO] Wait 8s for answer listener warm-up
+              ping 127.0.0.1 -n 9 >nul
+              "${pyExeTDM}" run_testcase.py testcase\\rainbow_call.xml
+            """
+          }
+        }
+      }
+
+    node(answerNode) {
+      timeout(time: 2, unit: 'MINUTES') {
+        bat """
+          cd /d "${wsDir}"
+          if exist testAudioFile\\record_rb.wav (
+            set ts=%DATE:~0,4%%DATE:~5,2%%DATE:~8,2%_%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
+            set ts=%ts: =0%
+            move /Y testAudioFile\\record_rb.wav "${answerOutDir}\\%ts%_loop${i}.wav"
+          ) else (
+            echo [WARN] testAudioFile\\record_rb.wav not found after loop ${i}
+          )
+        """
+      }
+    }
+  }
+}
+
+if (params.RUN_NISQA) {
+  stage('NISQA Analysis') {
+    node(answerNode) {
+      timeout(time: 30, unit: 'MINUTES') {
+        bat """
+          cd /d "${wsDir}"
+          "${pyExeAudio}" D:\\Audio-quality-assessment\\voice_quality_tool\\nisqa\\analyze_nisqa_baseline_compare.py --test-dir "${answerOutDir}" --model D:\\Audio-quality-assessment\\voice_quality_tool\\nisqa\\nisqa.tar -e
+        """
+      }
+    }
+  }
+}
+
+if (params.PUBLISH_HTML_REPORT) {
+  stage('Publish HTML Report') {
+    node(answerNode) {
+      dir(wsDir) {
+        // Create a stable artifact path for Excel download link in HTML report.
+        def copiedResultXlsx = (bat(
+          returnStatus: true,
+          script: """
+            cd /d "${wsDir}"
+            set "LATEST_RESULT="
+            for /f "delims=" %%F in ('dir /b /s /a:-d "testAudioFile\\result.xlsx" 2^>nul') do set "LATEST_RESULT=%%F"
+            if defined LATEST_RESULT (
+              copy /Y "%LATEST_RESULT%" "testAudioFile\\rainbow_result.xlsx" >nul
+              exit /b 0
+            ) else (
+              exit /b 1
+            )
+          """
+        ) == 0)
+
+        if (!copiedResultXlsx) {
+          echo params.RUN_NISQA ? "[WARN] result.xlsx not found under testAudioFile" : "[INFO] RUN_NISQA=false, skip result.xlsx link"
+        }
+
+        def resultXlsxArtifactUrl = "${env.BUILD_URL}artifact/testAudioFile/rainbow_result.xlsx"
+        def resultXlsxSection = copiedResultXlsx
+          ? "<p><span class=\"k\">Download result.xlsx:</span> <a href=\"${resultXlsxArtifactUrl}\">${resultXlsxArtifactUrl}</a></p>"
+          : "<p><span class=\"k\">Download result.xlsx:</span> N/A (NISQA not run or result file not generated)</p>"
+
+        def reportHtml = """<!doctype html>
+<html lang=\"zh-CN\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Rainbow Stress Report</title>
+  <style>
+    body { font-family: Segoe UI, Helvetica, Arial, sans-serif; margin: 24px; color: #1f2937; }
+    h1 { margin-bottom: 8px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .k { color: #6b7280; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Rainbow Stress Test Summary</h1>
+  <div class=\"card\">
+    <p><span class=\"k\">Build:</span> ${env.JOB_NAME} #${env.BUILD_NUMBER}</p>
+    <p><span class=\"k\">Loop Count:</span> ${loops}</p>
+    <p><span class=\"k\">Call Node:</span> ${callNode}</p>
+    <p><span class=\"k\">Answer Node:</span> ${answerNode}</p>
+    <p><span class=\"k\">Answer Output Directory:</span> <code>${answerOutDir}</code></p>
+    <p><span class=\"k\">NISQA:</span> ${params.RUN_NISQA ? 'Enabled' : 'Disabled'}</p>
+  </div>
+  <div class=\"card\">
+    <p>This is a Jenkins-generated HTML summary page.</p>
+    <p>Detailed outputs are archived as artifacts: baseline compare JSON/PNG, result.xlsx, and recorded WAV files.</p>
+    ${resultXlsxSection}
+  </div>
+</body>
+</html>
+"""
+
+        writeFile file: 'testAudioFile/rainbow_stress_report.html', text: reportHtml, encoding: 'UTF-8'
+
+        try {
+          publishHTML(target: [
+            allowMissing: false,
+            alwaysLinkToLastBuild: true,
+            keepAll: true,
+            reportDir: 'testAudioFile',
+            reportFiles: 'rainbow_stress_report.html',
+            reportName: 'Rainbow Stress Report'
+          ])
+        } catch (err) {
+          echo "[WARN] publishHTML failed (HTML Publisher plugin may be missing): ${err}"
+          archiveArtifacts artifacts: 'testAudioFile/rainbow_stress_report.html', allowEmptyArchive: true
+        }
+      }
+    }
+  }
+}
+
+stage('Archive Artifacts') {
+  node(answerNode) {
+    // Archive answer-side recordings and reports
+    archiveArtifacts artifacts: "testAudioFile/**/baseline_compare_*.png, testAudioFile/**/baseline_compare_*.json, testAudioFile/**/result.xlsx, testAudioFile/rainbow_result.xlsx, testAudioFile/**/record*.wav", allowEmptyArchive: true
+  }
+}

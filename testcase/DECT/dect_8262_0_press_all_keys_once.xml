@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+    <testcase name="DECT_8262_press_all_keys_one_by_one_test">
+        <!-- 1. 初始化 DECT 控制器 (指定型号和串口) -->
+        <step type="dect" action="init" content="8262" com_port="COM3" />
+        <step type="wait" action="sleep" content="1" />
+
+        <!-- 2. 依次按下 8262.json 中定义的每一个按键 -->
+        <step type="dect" action="press_key" content="offhook" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="1" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="2" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="3" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="4" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="5" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="6" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="7" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="8" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="9" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="0" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="*" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="#" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="ok" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="menu" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="right" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="left" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="down" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="up" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="sk1" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="back" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="sk2" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="sk3" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="home" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="F1" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="F2" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="ring" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <step type="dect" action="press_key" content="onhook" />
+        <step type="wait" action="sleep" content="0.3" />
+
+        <!-- 3. 最后回原点，并给足等待时间移动到位 -->
+        <step type="dect" action="origin" />
+        <step type="wait" action="sleep" content="3" />
+
+        <!-- 4. 释放资源 -->
+        <step type="dect" action="close" />
+    </testcase>
+</testcases>

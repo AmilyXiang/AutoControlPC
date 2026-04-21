@@ -19,7 +19,7 @@ def get_ocr_tool():
     """按需初始化OCR，减少程序启动阻塞"""
     global ocr
     if ocr is None:
-        print("[OCR] 初始化OCR引擎...")
+        print("[OCR] Initializing OCR engine...")
         ocr = OcrTool(['en', 'ch_sim'], gpu=False)
     return ocr
 
@@ -30,8 +30,8 @@ def grab_screen_or_raise(context):
         return ImageGrab.grab()
     except OSError as e:
         raise RuntimeError(
-            f"[{context}] 截图失败。Jenkins节点可能运行在非交互会话（服务会话）或桌面已锁屏。"
-            "请使用已登录且保持解锁的桌面会话运行agent。"
+            f"[{context}] Screenshot capture failed. Jenkins may be running in a non-interactive session "
+            "(service session) or the desktop is locked. Please run the agent in a logged-in, unlocked desktop session."
         ) from e
 
 # 设备管理器
@@ -45,7 +45,7 @@ def execute_step(step):
     step_type = step.get('type')
     action = step.get('action')
     content = step.get('content')
-    print(f"执行: type={step_type}, action={action}, content={content}")
+    print(f"Execute step: type={step_type}, action={action}, content={content}")
     if step_type == 'keyboard':
         if action == 'press_key':
             pyautogui.press(content)
@@ -73,7 +73,7 @@ def execute_step(step):
             time_duration = step.get('time')
             duration_arg = float(time_duration) if time_duration else None
             ok = play_audio(content, device_arg, duration_arg)
-            print(f"[AUDIO] 播放音频: {content} {'成功' if ok else '失败'}" + (f" (时长: {duration_arg}s)" if duration_arg else ""))
+            print(f"[AUDIO] Play audio: {content} {'success' if ok else 'failed'}" + (f" (duration: {duration_arg}s)" if duration_arg else ""))
         elif action == 'play_async':
             # 异步播放，不阻塞后续步骤
             from audio_player import play_audio
@@ -84,8 +84,8 @@ def execute_step(step):
             duration_arg = float(time_duration) if time_duration else None
             thread = threading.Thread(target=play_audio, args=(content, device_arg, duration_arg), daemon=True)
             thread.start()
-            device_display = f"'{device_str}' (ID={device_idx})" if device_idx is not None else (device_str if device_str != '-1' else '默认')
-            print(f"[AUDIO] 异步播放音频: {content}，设备: {device_display}" + (f", 时长: {duration_arg}s" if duration_arg else ""))
+            device_display = f"'{device_str}' (ID={device_idx})" if device_idx is not None else (device_str if device_str != '-1' else 'default')
+            print(f"[AUDIO] Async play audio: {content}, device: {device_display}" + (f", duration: {duration_arg}s" if duration_arg else ""))
         elif action == 'record':
             # 同步录音
             from audio_recorder import record_audio
@@ -96,7 +96,7 @@ def execute_step(step):
             duration = float(step.get('duration', 5))
             output_file = content
             record_audio(device_idx, duration, output_file)
-            print(f"[AUDIO] 录音完成: {output_file}")
+            print(f"[AUDIO] Recording completed: {output_file}")
         elif action == 'record_async':
             # 异步录音，不阻塞后续步骤
             from audio_recorder import record_audio
@@ -109,11 +109,29 @@ def execute_step(step):
             thread = threading.Thread(target=record_audio, args=(device_idx, duration, output_file), daemon=True)
             thread.start()
             device_display = f"'{device_str}' (ID={device_idx})" if device_str != '0' else '0'
-            print(f"[AUDIO] 异步录音开始，设备: {device_display}，时长: {duration}s，输出: {output_file}")
+            print(f"[AUDIO] Async recording started, device: {device_display}, duration: {duration}s, output: {output_file}")
         elif action == 'stop_record':
             # 停止录音
             from audio_recorder import stop_record
             stop_record()
+        elif action == 'check_voice':
+            # 检测音频文件是否有声音
+            from audio_voice_detector import detect_silence
+            audio_file = content
+            rms_th = float(step.get('rms_threshold', 0.001))
+            snr_th = float(step.get('snr_threshold', 3.0))
+            result = detect_silence(audio_file, rms_threshold=rms_th, snr_threshold=snr_th)
+            has_voice = not result['is_silence']
+            print(f"[AUDIO] Voice check: {audio_file} -> {'voice detected' if has_voice else 'silence'} "
+                f"(RMS={result['rms_mean']}, noise_floor={result['noise_floor']}, SNR={result['snr']})")
+            expect = step.get('expect')
+            if expect is not None:
+                expect_voice = expect.lower() in ('true', '1', 'yes')
+                if expect_voice != has_voice:
+                    raise AssertionError(
+                        f"Voice check assertion failed: expected {'voice' if expect_voice else 'silence'}, "
+                        f"actual {'voice' if has_voice else 'silence'} (file={audio_file})")
+                print(f"[AUDIO] Voice check assertion passed: expected {'voice' if expect_voice else 'silence'}")
     elif step_type == 'network':
         if action == 'init':
             # network init: 初始化网络连接
@@ -126,15 +144,15 @@ def execute_step(step):
                     parts = content.split(':')
                     peer_host = parts[0]
                     peer_port = int(parts[1])
-                    print(f"[NETWORK] 初始化网络: 本地端口={local_port}, 对端={peer_host}:{peer_port}")
+                    print(f"[NETWORK] Initialize network: local_port={local_port}, peer={peer_host}:{peer_port}")
                     init_network(local_port, peer_host, peer_port)
                 else:
-                    print(f"[NETWORK] 初始化网络: 本地端口={local_port}（仅启动服务器）")
+                    print(f"[NETWORK] Initialize network: local_port={local_port} (server only)")
                     init_network(local_port=local_port)
-                print(f"[NETWORK] [OK] 网络初始化成功")
+                print(f"[NETWORK] [OK] Network initialization succeeded")
             except Exception as e:
-                print(f"[NETWORK] [FAIL] 网络初始化失败: {e}")
-                raise RuntimeError(f"网络初始化失败，停止测试: {e}")
+                print(f"[NETWORK] [FAIL] Network initialization failed: {e}")
+                raise RuntimeError(f"Network initialization failed, stop testing: {e}")
         
         elif action == 'send':
             # network send: 发送消息
@@ -150,14 +168,14 @@ def execute_step(step):
                 data = {'message': data_str}
             
             network = get_network()
-            print(f"[DEBUG] 开始发送消息: 事件={event_name}, 数据={data}")
-            print(f"[DEBUG] client_socket状态: {network.client_socket}")
+            print(f"[DEBUG] Sending message: event={event_name}, data={data}")
+            print(f"[DEBUG] client_socket state: {network.client_socket}")
             success = network.send(event_name, data)
-            print(f"[NETWORK] 发送消息: {event_name}, 成功={success}")
+            print(f"[NETWORK] Send message: {event_name}, success={success}")
             
             if not success:
-                print(f"[NETWORK] [FAIL] 消息发送失败")
-                raise RuntimeError(f"消息发送失败（事件: {event_name}），停止测试")
+                print(f"[NETWORK] [FAIL] Message send failed")
+                raise RuntimeError(f"Message send failed (event: {event_name}), stop testing")
         
         elif action == 'receive':
             # network receive: 接收消息（阻塞）
@@ -175,10 +193,10 @@ def execute_step(step):
                     import json
                     check_data = json.loads(check_str)
                 except Exception as e:
-                    raise RuntimeError(f"check属性JSON解析失败: {check_str}, 错误: {e}")
+                    raise RuntimeError(f"Failed to parse JSON in 'check' attribute: {check_str}, error: {e}")
             
             network = get_network()
-            print(f"[DEBUG] 开始等待接收: 事件={event_name}, 超时={timeout}秒")
+            print(f"[DEBUG] Waiting to receive: event={event_name}, timeout={timeout}s")
             message = network.receive(event_name, timeout)
             
             if message:
@@ -193,22 +211,22 @@ def execute_step(step):
                         actual_value = data.get(key)
                         if actual_value != expected_value:
                             all_match = False
-                            print(f"[NETWORK] [WARN] data验证失败: {key} 期望={expected_value}, 实际={actual_value}")
+                            print(f"[NETWORK] [WARN] Data validation failed: {key}, expected={expected_value}, actual={actual_value}")
                     
                     if not all_match:
-                        raise RuntimeError(f"接收消息验证失败: 事件={event}, 期望数据={check_data}, 实际数据={data}")
+                        raise RuntimeError(f"Received message validation failed: event={event}, expected_data={check_data}, actual_data={data}")
                 
-                print(f"[NETWORK] [OK] 接收成功")
-                print(f"           事件: {event}")
-                print(f"           数据: {data}")
-                print(f"           时间戳: {timestamp}")
+                print(f"[NETWORK] [OK] Receive succeeded")
+                print(f"           Event: {event}")
+                print(f"           Data: {data}")
+                print(f"           Timestamp: {timestamp}")
             else:
-                print(f"[NETWORK] [FAIL] 接收超时或失败: 事件={event_name}, 超时={timeout}秒")
-                raise RuntimeError(f"消息接收失败或超时（事件: {event_name}），停止测试")
+                print(f"[NETWORK] [FAIL] Receive timeout or failure: event={event_name}, timeout={timeout}s")
+                raise RuntimeError(f"Message receive failed or timed out (event: {event_name}), stop testing")
         
         elif action == 'stop':
             # network stop: 停止网络连接
-            print(f"[NETWORK] 停止网络连接")
+            print(f"[NETWORK] Stop network connection")
             stop_network()
     elif step_type == 'check':
         if action == 'input_method':
@@ -218,20 +236,20 @@ def execute_step(step):
             w, h = screen.size
             region = screen.crop((w-200, h-80, w, h))
             status = ocr_tool.find_text_position('英', region)
-            print(f"[CHECK] OCR识别右下角：'英'={status}")
+            print(f"[CHECK] OCR in bottom-right corner: '英'={status}")
             need_switch = False
             if content == '英语(美国)':
                 if not status:
-                    print("[CHECK] 当前不是英文输入状态，尝试切换...")
+                    print("[CHECK] Current input method is not English, trying to switch...")
                     need_switch = True
                 else:
-                    print("[CHECK] 当前已是英文输入状态，无需切换")
+                    print("[CHECK] Current input method is already English, no switch needed")
             elif content == '中文(简体，中国)':
                 if status:
-                    print("[CHECK] 当前是英文输入状态，需要切换到中文...")
+                    print("[CHECK] Current input method is English, switching to Chinese...")
                     need_switch = True
                 else:
-                    print("[CHECK] 当前已不是英文输入状态，无需切换")
+                    print("[CHECK] Current input method is already not English, no switch needed")
             if need_switch:
                 for i in range(5):
                     pyautogui.hotkey('ctrl', 'space')
@@ -239,14 +257,14 @@ def execute_step(step):
                     screen = grab_screen_or_raise('CHECK')
                     region = screen.crop((w-200, h-80, w, h))
                     status = ocr_tool.find_text_position('英', region)
-                    print(f"[CHECK] 切换后OCR：'英'={status}")
+                    print(f"[CHECK] OCR after switch: '英'={status}")
                     if (content == '英语(美国)' and status) or (content == '中文(简体，中国)' and not status):
-                        print("[CHECK] 输入法切换成功！")
+                        print("[CHECK] Input method switch succeeded")
                         break
                 else:
-                    print("[CHECK] 输入法切换失败，当前OCR状态未达期望")
+                    print("[CHECK] Input method switch failed, OCR state did not meet expectation")
             else:
-                print("[CHECK] 当前输入法已是期望值，无需切换")
+                print("[CHECK] Current input method already matches expectation, no switch needed")
     elif step_type == 'process':
         if action == 'close':
             # 关闭指定进程
@@ -269,7 +287,7 @@ def execute_step(step):
             elif fmt == 'csv':
                 clipboard_save.save_clipboard_to_csv(filename)
             else:
-                print(f"[CLIPBOARD] 暂不支持的格式: {fmt}")
+                print(f"[CLIPBOARD] Unsupported format: {fmt}")
     elif step_type == 'wait':
         if action == 'sleep':
             time.sleep(float(content))
@@ -281,22 +299,22 @@ def execute_step(step):
             screenshot = grab_screen_or_raise('OCR')
             pos = ocr_tool.find_text_position(content, screenshot)
             if pos:
-                print(f"[OCR] 找到'{content}'，点击位置: {pos}")
+                print(f"[OCR] Found '{content}', click position: {pos}")
                 ac.move_mouse(pos[0], pos[1], duration=0.5)
                 ac.left_click()
             else:
-                print(f"[OCR] 未找到'{content}'，跳过点击")
-                print("[OCR] 本次截图所有识别结果：")
+                print(f"[OCR] '{content}' not found, skip click")
+                print("[OCR] All recognized results in current screenshot:")
                 results = ocr_tool.reader.readtext(np.array(screenshot))
                 for bbox, text, conf in results:
-                    print(f"  文本: '{text}'  置信度: {conf:.2f}")
+                    print(f"  Text: '{text}'  Confidence: {conf:.2f}")
                 screenshot.save(f"ocr_debug_{content}.png")
-                print(f"[OCR] 已保存调试截图: ocr_debug_{content}.png")
+                print(f"[OCR] Debug screenshot saved: ocr_debug_{content}.png")
     elif step_type == 'window':
         if action == 'maximize_top':
             from window_util import maximize_top_window
             ok = maximize_top_window()
-            print(f"[WINDOW] 最大化最上层窗口: {'成功' if ok else '失败'}")
+            print(f"[WINDOW] Maximize top window: {'success' if ok else 'failed'}")
     elif step_type == 'icon':
         if action == 'find_and_move':
             from icon_detector import IconDetector
@@ -305,10 +323,10 @@ def execute_step(step):
             matches = detector.find_icons(content)
             if matches:
                 x, y, score = matches[0]
-                print(f"[ICON] 检测到图标，位置=({x},{y}), 置信度={score:.2f}，自动移动鼠标")
+                print(f"[ICON] Icon detected at ({x},{y}), confidence={score:.2f}, move mouse automatically")
                 MouseController().move_to(x, y, duration=0.3)
             else:
-                print(f"[ICON] 未检测到图标: {content}")
+                print(f"[ICON] Icon not detected: {content}")
     elif step_type == 'dect':
         from dect_controller import init_dect_controller, get_dect_controller, close_dect_controller
         if action == 'init':
@@ -321,6 +339,18 @@ def execute_step(step):
             press_type = step.get('press_type', 'short')
             ctrl = get_dect_controller()
             ctrl.press_key(content, press_type=press_type)
+        elif action == 'dial_number':
+            # content: 整串号码 (例如: 10000, *123#)
+            # 支持的字符: 0-9, *, #
+            interval = float(step.get('interval', 0.5))
+            ctrl = get_dect_controller()
+            for ch in content:
+                if ch in '0123456789*#':
+                    ctrl.press_key(ch)
+                    time.sleep(interval)
+                else:
+                    print(f"[DECT] dial_number: skip unsupported character '{ch}'")
+            print(f"[DECT] dial_number: dialed '{content}' ({len([c for c in content if c in '0123456789*#'])} keys, interval={interval}s)")
         elif action == 'verify_screen':
             # content: JSON格式的期望结果 (例如: {"text": "10000", "signal": true})
             import json
@@ -328,7 +358,7 @@ def execute_step(step):
             expected = json.loads(content)
             success = ctrl.verify_screen(expected)
             if not success:
-                print(f"[DECT] [FAIL] 屏幕验证失败")
+                raise AssertionError(f"DECT screen verification failed: expected {content}")
         elif action == 'capture':
             # 仅拍照分析，不验证
             ctrl = get_dect_controller()
@@ -340,58 +370,118 @@ def execute_step(step):
             close_dect_controller()
     time.sleep(0.3)
 
-def execute_testcases(xml_path, testcase_name=None):
+def execute_testcases(xml_path, testcase_name=None, report=None):
+    from test_report import TestReport
+    if report is None:
+        report = TestReport(xml_path)
     tree = ET.parse(xml_path)
     root = tree.getroot()
     import glob
+    xml_basename = os.path.basename(xml_path)
     for testcase in root.findall('testcase'):
         tc_name = testcase.get('name')
         # 如果指定了testcase_name，则只执行匹配的
         if testcase_name and tc_name != testcase_name:
             continue
-        print(f"\n开始执行用例: {tc_name}")
+        display_name = f"[{xml_basename}] {tc_name}"
+        print(f"\nStart testcase: {display_name}")
+        tc_start = time.time()
+        steps_done = 0
         try:
             for step in testcase.findall('step'):
                 execute_step(step)
+                steps_done += 1
+            tc_duration = time.time() - tc_start
+            report.add_result(display_name, 'PASS', tc_duration, steps_done=steps_done)
         except Exception as e:
-            print(f"[ERROR] 用例 '{tc_name}' 执行出错: {e}")
+            tc_duration = time.time() - tc_start
+            report.add_result(display_name, 'FAIL', tc_duration, error=e, steps_done=steps_done)
+            print(f"[ERROR] Testcase '{display_name}' execution failed: {e}")
             # 报错时尝试让 DECT 机械回原点
             try:
                 from dect_controller import get_dect_controller
                 ctrl = get_dect_controller()
                 ctrl.origin()
-                print("[DECT] 异常恢复：已回原点")
+                print("[DECT] Error recovery: step to origin")
             except Exception:
                 pass
-            raise
-        print(f"用例 '{tc_name}' 执行完毕\n")
+        print(f"Testcase '{display_name}' finished\n")
         # 删除执行过程中生成的图片等文件
         patterns = ["last_rainbow_screenshot.png", "after_cui_ji_click.png", "after_call_click.png"]
         for pat in patterns:
             for f in glob.glob(pat):
                 try:
                     os.remove(f)
-                    # print(f"已删除文件: {f}")
                 except Exception as e:
-                    print(f"删除文件失败: {f}, 原因: {e}")
+                    print(f"Failed to delete file: {f}, reason: {e}")
+    return report
+
+
+def run_and_report(xml_paths, testcase_name=None):
+    """执行一组 XML 测试文件，汇总生成一份报告。"""
+    from test_report import TestReport
+    label = xml_paths[0] if len(xml_paths) == 1 else f"{len(xml_paths)} XML files"
+    report = TestReport(label)
+    for xml_path in xml_paths:
+        print(f"\n{'='*50}")
+        print(f"Load test file: {xml_path}")
+        print(f"{'='*50}")
+        execute_testcases(xml_path, testcase_name=testcase_name, report=report)
+
+    # 生成 HTML 测试报告
+    report_path = report.generate_html()
+    total, passed, failed, skipped = report.summary()
+    print(f"\n{'='*50}")
+    print(f"Test report generated: {report_path}")
+    print(f"Total: {total}  Passed: {passed}  Failed: {failed}  Skipped: {skipped}")
+    print(f"{'='*50}")
+    return report
+
+def resolve_xml_paths(path_arg):
+    """解析路径参数，支持单文件、目录、glob 通配符。"""
+    import glob as _glob
+    # 目录：取下面所有 .xml
+    if os.path.isdir(path_arg):
+        files = sorted(_glob.glob(os.path.join(path_arg, '*.xml')))
+        if not files:
+            print(f"No XML files found in directory: {path_arg}")
+            sys.exit(2)
+        return files
+    # 通配符
+    if '*' in path_arg or '?' in path_arg:
+        files = sorted(_glob.glob(path_arg))
+        if not files:
+            print(f"Wildcard did not match any files: {path_arg}")
+            sys.exit(2)
+        return files
+    # 单文件
+    if os.path.isfile(path_arg):
+        return [path_arg]
+    print(f"Specified file or directory not found: {path_arg}")
+    sys.exit(2)
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("用法: python run_testcase.py <xml文件路径> [testcase名称]")
-        print("示例: python run_testcase.py testcase/p2p_network_demo.xml P2P_Sender")
-        print("      python run_testcase.py testcase/rainbow_main.xml")
+        print("Usage: python run_testcase.py <xml_file/dir/glob> [testcase_name]")
+        print("Example: python run_testcase.py testcase/rainbow_main.xml")
+        print("         python run_testcase.py testcase/DECT/")
+        print("         python run_testcase.py testcase/DECT/*.xml")
+        print("         python run_testcase.py testcase/DECT/ MyCaseName")
         sys.exit(1)
-    xml_file = sys.argv[1]
+    xml_arg = sys.argv[1]
     testcase_name = sys.argv[2] if len(sys.argv) > 2 else None
-    if not os.path.isfile(xml_file):
-        print(f"未找到指定的xml文件: {xml_file}")
-        sys.exit(2)
-    execute_testcases(xml_file, testcase_name)
-    # 程序结束后清理所有 debug_match_*.png
+    xml_paths = resolve_xml_paths(xml_arg)
+    print(f"XML files to execute ({len(xml_paths)}): {xml_paths}")
+    report = run_and_report(xml_paths, testcase_name)
+    # 有失败用例时返回非零退出码
+    _, _, failed, _ = report.summary()
+    # 清理调试图片
     import glob
     for f in glob.glob('debug_match_*.png'):
         try:
             os.remove(f)
-            #print(f"已删除调试图片: {f}")
         except Exception as e:
-            print(f"删除调试图片失败: {f}, 原因: {e}")
+            print(f"Failed to delete debug image: {f}, reason: {e}")
+    if failed > 0:
+        sys.exit(1)
