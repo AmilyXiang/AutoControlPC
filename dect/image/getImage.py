@@ -24,7 +24,7 @@ from MvCameraControl_class import *
 
 
 class CameraGrabber():
-    def __init__(self):
+    def __init__(self, camera_index=0):
         MvCamera.MV_CC_Initialize()
         CameraOperation.set_exposure_time = 60000
 
@@ -81,7 +81,7 @@ class CameraGrabber():
                 strSerialNumber = self.decoding_char(mvcc_dev_info.SpecialInfo.stXoFInfo.chSerialNumber)
                 print ("user serial number: %s" % strSerialNumber)
 
-        nConnectionNum = 0
+        nConnectionNum = camera_index
 
         if int(nConnectionNum) >= deviceList.nDeviceNum:
             print ("intput error!")
@@ -93,8 +93,6 @@ class CameraGrabber():
         ret = self.cam.MV_CC_CreateHandle(stDeviceList)
         if ret != 0:
             raise Exception ("create handle fail! ret[0x%x]" % ret)
-        self.cam.MV_CC_SetEnumValue("ExposureAuto", 0)
-        self.cam.MV_CC_SetFloatValue("ExposureTime", float(50000))
 
         ret = self.cam.MV_CC_OpenDevice(MV_ACCESS_Exclusive, 0)
         if ret != 0:
@@ -112,6 +110,17 @@ class CameraGrabber():
         ret = self.cam.MV_CC_SetEnumValue("TriggerMode", MV_TRIGGER_MODE_OFF)
         if ret != 0:
             raise Exception ("set trigger mode fail! ret[0x%x]" % ret)
+
+        # Set exposure after device is opened — settings don't take effect
+        # on a device that hasn't been opened yet (e.g. after power cycle).
+        ret = self.cam.MV_CC_SetEnumValue("ExposureAuto", 0)
+        if ret != 0:
+            print("Warning: set ExposureAuto fail! ret[0x%x]" % ret)
+        ret = self.cam.MV_CC_SetFloatValue("ExposureTime", float(50000))
+        if ret != 0:
+            print("Warning: set ExposureTime fail! ret[0x%x]" % ret)
+        else:
+            print("ExposureTime set to 50000 us")
 
     def decoding_char(self, ctypes_char_array):
         byte_str = memoryview(ctypes_char_array).tobytes()

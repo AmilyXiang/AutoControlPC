@@ -32,11 +32,15 @@
 - **HTML 测试报告**：执行完成后自动生成 `testreport/report.html`，含 PASS/FAIL 汇总和失败原因
 
 ### DECT自动化（相机 + 机械）
+- **多设备支持**：通过 `device` 属性同时控制多套 DECT 设备（移动臂 + 摄像头）
+- **集中配置**：设备串口、摄像头、分机号等统一在 `dect/config/devices.json` 管理
+- **变量引用**：XML 用例中用 `{device.X.field}` 引用任意设备配置项
 - **DECT按键操作**：支持拨号、摘机、挂机、回原点等动作
 - **视觉识别**：YOLO + PaddleOCR 识别屏幕文字和图标
-- **相机常开取帧**：在 `dect init` 后启动抓流，后续抓图直接取帧，提升稳定性和速度
+- **资源全局缓存**：相机、YOLO模型、PaddleOCR模型、串口连接在进程生命周期内只初始化一次，多个 XML case 之间自动复用，无需重复加载
+- **摄像头共享**：多设备配置相同 `camera_index` 时自动共用，不会重复打开
 - **调试图片自动保存**：每次抓图会保存到 `png/debug/capture_<timestamp>.png`
-- **异常保护**：case 执行中途异常时，自动尝试机械回原点
+- **异常保护**：case 执行中途异常时，自动尝试所有设备机械回原点
 
 ## 快速开始
 
@@ -81,6 +85,7 @@ python run_testcase.py testcase/p2p_network_demo.xml P2P_SinglePC_Send
 AutoControlPC/
 ├── run_testcase.py              # XML测试用例执行引擎（支持单文件/目录/通配符）
 ├── test_report.py               # HTML 测试报告生成器
+├── dect_controller.py           # DECT 控制器（多设备支持）
 ├── audio_voice_detector.py      # 音频有声/静音检测
 ├── network_event.py              # P2P网络事件定义
 ├── p2p_network.py                # P2P网络通信实现
@@ -94,6 +99,14 @@ AutoControlPC/
 ├── icon_detector.py              # 图标检测
 ├── window_util.py                # 窗口操作
 ├── input_method_util.py          # 输入法检测
+├── dect/                         # DECT 模块
+│   ├── config/                   # 设备配置
+│   │   ├── devices.json          # 多设备配置（串口、摄像头、分机号等）
+│   │   └── settings.py           # DeviceConfig dataclass + 加载逻辑
+│   ├── image/                    # 摄像头、视觉分析
+│   └── move/                     # 运动控制
+│       ├── setting.py            # 运动参数（速度、加速度、按压深度等）
+│       └── layout/               # 按键坐标配置（8262.json, 8254.json 等）
 ├── testcase/                     # 测试用例目录
 │   ├── DECT/                     # DECT 相关用例
 │   ├── netease_music.xml         # 音乐播放测试
@@ -104,6 +117,71 @@ AutoControlPC/
 ├── requirements.txt              # Python依赖
 └── setup.py                      # 包配置文件
 ```
+
+## DECT 多设备配置
+
+### 设备配置文件
+
+设备硬件信息集中管理在 `dect/config/devices.json`：
+
+```json
+{
+    "1": {
+        "com_port": "COM3",
+        "camera_index": 0,
+        "ext_number": "20001"
+    },
+    "2": {
+        "com_port": "COM5",
+        "camera_index": 1,
+        "ext_number": "20002"
+    }
+}
+```
+
+新增设备只需在此文件中添加一条记录。运动参数（速度、加速度、按压深度等）在 `dect/move/setting.py` 中配置。
+
+### 多设备用例
+
+通过 `device` 属性指定操作哪套设备（默认为 `"1"`）：
+
+```xml
+<testcase name="DECT_双设备通话测试">
+    <!-- 初始化两套设备 -->
+    <step type="dect" action="init" content="8262" device="1" />
+    <step type="dect" action="init" content="8262" device="2" />
+
+    <!-- 设备1 拨打 设备2 的分机号 -->
+    <step type="dect" action="dial_number" content="{device.2.ext_number}" device="1" />
+    <step type="dect" action="press_key" content="offhook" device="1" />
+
+    <!-- 设备2 验证来电显示并接听 -->
+    <step type="dect" action="verify_screen" content='{"text": "{device.1.ext_number}"}' device="2" />
+    <step type="dect" action="press_key" content="offhook" device="2" />
+
+    <!-- 双方挂机 -->
+    <step type="dect" action="press_key" content="onhook" device="1" />
+    <step type="dect" action="press_key" content="onhook" device="2" />
+
+    <!-- 回原点并关闭 -->
+    <step type="dect" action="origin" device="1" />
+    <step type="dect" action="origin" device="2" />
+    <step type="dect" action="close" device="1" />
+    <step type="dect" action="close" device="2" />
+</testcase>
+```
+
+### 变量引用语法
+
+XML 用例中可使用 `{device.X.field}` 引用任意设备的配置项，适用于所有步骤类型：
+
+| 变量 | 说明 |
+|------|------|
+| `{device.1.ext_number}` | 设备1的分机号 |
+| `{device.2.com_port}` | 设备2的串口 |
+| `{device.1.camera_index}` | 设备1的摄像头编号 |
+
+变量在运行时自动替换，`devices.json` 中新增的字段无需改代码即可引用。
 
 ## DECT用例快速运行
 
@@ -128,7 +206,7 @@ python run_testcase.py testcase/DECT/ MyCaseName
 ### DECT 长按示例
 ```xml
 <testcase name="DECT_LongPress_Test" description="DECT long press example">
-      <step type="dect" action="init" content="8262" com_port="COM3" />
+      <step type="dect" action="init" content="8262" />
 
       <!-- Long press OK key for the configured long-press duration -->
       <step type="dect" action="press_key" content="ok" press_type="long" />
@@ -145,7 +223,7 @@ python run_testcase.py testcase/DECT/ MyCaseName
 ### DECT 整串拨号示例
 ```xml
 <testcase name="DECT_DialNumber_Test" description="DECT dial full number in one step">
-      <step type="dect" action="init" content="8262" com_port="COM3" />
+      <step type="dect" action="init" content="8262" />
 
       <!-- Dial 10000 with 0.3s interval between each key -->
       <step type="dect" action="dial_number" content="10000" interval="0.3" />
@@ -321,13 +399,13 @@ python run_testcase.py testcase/DECT/ MyCaseName
 | ocr | find_and_click | OCR定位并点击 |
 | window | maximize_top | 最大化顶部窗口 |
 | icon | find_and_move | 图标检测并移动鼠标 |
-| dect | init | 初始化 DECT 控制器 |
+| dect | init | 初始化 DECT 控制器（支持 `device` 指定设备） |
 | dect | press_key | DECT 按键操作（支持 `press_type`） |
-| dect | dial_number | 整串号码拨号（支持 `interval` 按键间隔） |
-| dect | verify_screen | 验证 DECT 屏幕内容 |
+| dect | dial_number | 整串号码拨号（支持 `interval` 和 `{device.X.field}` 变量） |
+| dect | verify_screen | 验证 DECT 屏幕内容（支持拼接匹配） |
 | dect | capture | 仅抓图并分析 |
 | dect | origin | 机械回原点 |
-| dect | close | 释放 DECT 资源 |
+| dect | close | 断开控制器（资源保留供下一个 case 复用） |
 
 ## 网络事件系统
 
@@ -397,8 +475,14 @@ A：某些音频库需要额外配置。可先查看 [QUICK_GUIDE.md](QUICK_GUID
 **Q：DECT拍照后的图片保存在哪里？**
 A：运行 DECT 视觉步骤时，原始抓图会自动保存到 `png/debug/capture_<timestamp>.png`。
 
-**Q：DECT用例中报错后机械会不会停在半路？**
-A：框架会在 case 异常时自动尝试执行回原点动作，降低机构停留风险。
+**Q：报错后机械会不会停在半路？**
+A：框架会在 case 异常时自动尝试所有已初始化设备执行回原点动作，降低机构停留风险。
+
+**Q：跑多个 DECT XML case 时，每个 init 都会重新加载模型吗？**
+A：不会。相机、YOLO、PaddleOCR、串口等资源在进程内全局缓存，首次 `init` 加载后，后续 `init` 直接复用（~0s）。`close` 只是断开控制器引用，不销毁资源。进程退出时自动调用 `destroy_all()` 释放全部硬件。
+
+**Q：`close` 前需要手动 `origin` 吗？**
+A：是的。`close` 不再自动回原点，请在 `close` 前显式写 `<step type="dect" action="origin" />`。
 
 **Q：如何自定义网络事件？**
 A：在 `network_event.py` 中的 NetworkEvent 枚举类中添加新事件，然后在XML中使用。

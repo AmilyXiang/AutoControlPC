@@ -1,0 +1,12 @@
+{
+    "1": {
+        "com_port": "COM3",
+        "camera_index": 0,
+        "ext_number": "20001"
+    },
+    "2": {
+        "com_port": "COM5",
+        "camera_index": 0,
+        "ext_number": "20002"
+    }
+}

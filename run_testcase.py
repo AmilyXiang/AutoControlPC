@@ -41,10 +41,24 @@ from device_manager import get_device_id
 from p2p_network import get_network, init_network, stop_network
 from network_event import NetworkEvent, EVENTS
 
+import re
+def _resolve_device_vars(text):
+    """替换 {device.X.field} 变量为 devices.json 中的实际值"""
+    if not text or '{device.' not in text:
+        return text
+    from dect.config.settings import get_device_config
+    def _replacer(m):
+        device_id, field = m.group(1), m.group(2)
+        cfg = get_device_config(device_id)
+        if hasattr(cfg, field):
+            return str(getattr(cfg, field))
+        raise ValueError(f"DeviceConfig has no field '{field}' (device={device_id})")
+    return re.sub(r'\{device\.(\w+)\.(\w+)\}', _replacer, text)
+
 def execute_step(step):
     step_type = step.get('type')
     action = step.get('action')
-    content = step.get('content')
+    content = _resolve_device_vars(step.get('content'))
     print(f"Execute step: type={step_type}, action={action}, content={content}")
     if step_type == 'keyboard':
         if action == 'press_key':
@@ -329,21 +343,21 @@ def execute_step(step):
                 print(f"[ICON] Icon not detected: {content}")
     elif step_type == 'dect':
         from dect_controller import init_dect_controller, get_dect_controller, close_dect_controller
+        device_id = step.get('device', '1')
         if action == 'init':
-            # content: 设备型号 (例如: 8262)
+            # content: 设备型号 (例如: 8262), com_port和camera_index从setting.py的DEVICE_CONFIG读取
             model = content if content else '8262'
-            com_port = step.get('com_port')
-            init_dect_controller(model=model, com_port=com_port)
+            init_dect_controller(model=model, device_id=device_id)
         elif action == 'press_key':
             # content: 按键名 (例如: 1, hangup, ok)
             press_type = step.get('press_type', 'short')
-            ctrl = get_dect_controller()
+            ctrl = get_dect_controller(device_id)
             ctrl.press_key(content, press_type=press_type)
         elif action == 'dial_number':
             # content: 整串号码 (例如: 10000, *123#)
             # 支持的字符: 0-9, *, #
             interval = float(step.get('interval', 0.5))
-            ctrl = get_dect_controller()
+            ctrl = get_dect_controller(device_id)
             for ch in content:
                 if ch in '0123456789*#':
                     ctrl.press_key(ch)
@@ -354,20 +368,20 @@ def execute_step(step):
         elif action == 'verify_screen':
             # content: JSON格式的期望结果 (例如: {"text": "10000", "signal": true})
             import json
-            ctrl = get_dect_controller()
+            ctrl = get_dect_controller(device_id)
             expected = json.loads(content)
             success = ctrl.verify_screen(expected)
             if not success:
                 raise AssertionError(f"DECT screen verification failed: expected {content}")
         elif action == 'capture':
             # 仅拍照分析，不验证
-            ctrl = get_dect_controller()
+            ctrl = get_dect_controller(device_id)
             ctrl.capture_and_analyze()
         elif action == 'origin':
-            ctrl = get_dect_controller()
+            ctrl = get_dect_controller(device_id)
             ctrl.origin()
         elif action == 'close':
-            close_dect_controller()
+            close_dect_controller(device_id)
     time.sleep(0.3)
 
 def execute_testcases(xml_path, testcase_name=None, report=None):
@@ -397,12 +411,15 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
             tc_duration = time.time() - tc_start
             report.add_result(display_name, 'FAIL', tc_duration, error=e, steps_done=steps_done)
             print(f"[ERROR] Testcase '{display_name}' execution failed: {e}")
-            # 报错时尝试让 DECT 机械回原点
+            # 报错时尝试让所有 DECT 机械回原点
             try:
-                from dect_controller import get_dect_controller
-                ctrl = get_dect_controller()
-                ctrl.origin()
-                print("[DECT] Error recovery: step to origin")
+                from dect_controller import _controllers
+                for did, ctrl in _controllers.items():
+                    try:
+                        ctrl.origin()
+                        print(f"[DECT] Error recovery: device {did} returned to origin")
+                    except Exception:
+                        pass
             except Exception:
                 pass
         print(f"Testcase '{display_name}' finished\n")
@@ -476,6 +493,12 @@ if __name__ == '__main__':
     report = run_and_report(xml_paths, testcase_name)
     # 有失败用例时返回非零退出码
     _, _, failed, _ = report.summary()
+    # 释放 DECT 硬件资源（串口、相机、模型）
+    try:
+        from dect_controller import destroy_all
+        destroy_all()
+    except Exception:
+        pass
     # 清理调试图片
     import glob
     for f in glob.glob('debug_match_*.png'):

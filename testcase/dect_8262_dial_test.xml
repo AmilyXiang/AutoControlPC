@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testcases>
     <testcase name="DECT_8262_拨号测试">
-        <!-- 1. 初始化 DECT 控制器 (指定型号和串口) -->
-        <step type="dect" action="init" content="8262" com_port="COM3" />
+        <!-- 1. 初始化 DECT 控制器 -->
+        <step type="dect" action="init" content="8262" />
         <step type="wait" action="sleep" content="1" />
 
         <!-- 2. 拨号: 10000 -->

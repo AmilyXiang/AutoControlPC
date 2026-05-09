@@ -61,7 +61,7 @@ class MoveInterface:
         pass # 实现等待移动完成的逻辑，可以通过查询设备状态或者简单的时间等待来实现
 
     def origin(self):
-        command = "G01 X0 Y0 Z0"  # 回原点指令
+        command = f"G01 X0 Y0 Z0 F{self.settings.speed}"  # 回原点指令
         self.ser.send_command(command)
         self.X = 0
         self.Y = 0

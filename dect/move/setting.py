@@ -1,4 +1,5 @@
-# save settings here
+# 3轴运动平台控制相关参数
+
 class Settings:
     def __init__(self):
         self.wait_for_response = True
