@@ -9,9 +9,9 @@ def close_process_by_name(process_name):
     """
     try:
         subprocess.run(['taskkill', '/F', '/IM', process_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"已关闭所有 {process_name} 进程")
+        print(f"Closed all {process_name} processes")
     except subprocess.CalledProcessError as e:
-        print(f"关闭 {process_name} 失败：{e}")
+        print(f"Failed to close {process_name}: {e}")
 
 def run_bat_file(bat_path):
     """
@@ -20,18 +20,18 @@ def run_bat_file(bat_path):
     :return: None
     """
     if not os.path.isfile(bat_path):
-        print(f"[BAT] 文件不存在: {bat_path}")
+        print(f"[BAT] File not found: {bat_path}")
         return
     try:
         subprocess.run([bat_path], shell=True, check=True)
-        print(f"[BAT] 已运行: {bat_path}")
+        print(f"[BAT] Executed: {bat_path}")
     except subprocess.CalledProcessError as e:
-        print(f"[BAT] 运行失败: {e}")
+        print(f"[BAT] Execution failed: {e}")
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 3:
-        print("用法: python process.py <close/runbat> <参数>")
+        print("Usage: python process.py <close/runbat> <arg>")
     else:
         cmd = sys.argv[1]
         arg = sys.argv[2]
@@ -40,4 +40,4 @@ if __name__ == '__main__':
         elif cmd == 'runbat':
             run_bat_file(arg)
         else:
-            print("未知命令，只支持close和runbat")
+            print("Unknown command, only close and runbat are supported")

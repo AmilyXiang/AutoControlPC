@@ -52,18 +52,13 @@ def straighten_screen(image_path, save_path, file_name):
     cnts, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
     
-    screen_cnt = None
-    for c in cnts:
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.1 * peri, True)
-        if len(approx) == 4:
-            screen_cnt = approx
-            break
-    print(f"找到的屏幕轮廓点: {screen_cnt}")
+    img_area = img.shape[0] * img.shape[1]
+    screen_cnt = _find_screen_contour(cnts, img_area)
+    print(f"Screen contour points found: {screen_cnt}")
     print(edged.shape)
 
     rect_pts = order_points(screen_cnt)
-    print(f"排序后的屏幕轮廓点: {rect_pts}")
+    print(f"Ordered screen contour points: {rect_pts}")
 
     warped = get_warped_image(img, screen_cnt)
     warped = cv2.rotate(warped, cv2.ROTATE_90_CLOCKWISE)
@@ -72,6 +67,36 @@ def straighten_screen(image_path, save_path, file_name):
         cv2.waitKey(0)
     
     return warped
+
+def _find_screen_contour(cnts, img_area):
+    """Find the phone-screen quadrilateral among detected contours.
+
+    Strategy:
+    - Skip contours whose area is < 1% of the image (noise).
+    - Try multiple approxPolyDP epsilon values (tight → loose) to find
+      a 4-vertex polygon. The real screen may have slightly rounded
+      corners that need a looser epsilon.
+    - If no contour simplifies to exactly 4 vertices, fall back to the
+      largest contour and force a 4-corner approximation via its
+      bounding rotated rect.
+    """
+    min_area = img_area * 0.01  # at least 1% of the resized image
+    for c in cnts:
+        if cv2.contourArea(c) < min_area:
+            break  # sorted by area desc, everything after is smaller
+        peri = cv2.arcLength(c, True)
+        for eps in (0.02, 0.04, 0.06, 0.08, 0.10):
+            approx = cv2.approxPolyDP(c, eps * peri, True)
+            if len(approx) == 4:
+                return approx
+
+    # Fallback: use the largest contour (if big enough) and derive
+    # a 4-corner quad from its minimum-area rotated rectangle.
+    if cnts and cv2.contourArea(cnts[0]) >= min_area:
+        rect = cv2.minAreaRect(cnts[0])
+        box = cv2.boxPoints(rect)
+        return box.reshape(-1, 1, 2).astype(np.int32)
+    return None
 
 def straighten_screen_from_np(img):
     img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
@@ -87,15 +112,10 @@ def straighten_screen_from_np(img):
     cnts, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
     
-    screen_cnt = None
-    for c in cnts:
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.1 * peri, True)
-        if len(approx) == 4:
-            screen_cnt = approx
-            break
+    img_area = img.shape[0] * img.shape[1]
+    screen_cnt = _find_screen_contour(cnts, img_area)
     if screen_cnt is None:
-        print("[DECT] 未检测到屏幕轮廓（四边形），请检查摄像头画面和光照条件")
+        print("[DECT] No screen contour (quadrilateral) detected, check camera feed and lighting conditions")
         return None
     rect_pts = order_points(screen_cnt)
 

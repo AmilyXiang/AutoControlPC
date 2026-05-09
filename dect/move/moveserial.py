@@ -20,7 +20,7 @@ class SerialInterface:
         if self.ser.is_open:
             full_command = (command + "\n").encode('utf-8')
             self.ser.write(full_command)
-            print(f"已发送: {command}")
+            print(f"SEND: {command}")
 
     def receive_response(self):
         responses = []
@@ -33,7 +33,7 @@ class SerialInterface:
                     break  # 没有更多数据
             responses.append(line)
         for resp in responses:
-            print(f"收到回复: {resp}")
+            print(f"RECEIVE: {resp}")
 
     def close(self):
         self.ser.close()

@@ -29,12 +29,12 @@ def get_keyboard_layout_name():
     # 获取该线程的键盘布局
     hkl = ctypes.windll.user32.GetKeyboardLayout(thread_id)
     if not hkl:
-        return "无法获取键盘布局"
+        return "Failed to get keyboard layout"
     
     # 将HKL转换为布局ID（低16位）
     layout_id = format(hkl & 0xFFFF, '08X')
     
-    return layout_map.get(layout_id, f"未知({layout_id})")
+    return layout_map.get(layout_id, f"Unknown({layout_id})")
 
 if __name__ == '__main__':
-    print("当前输入法:", get_keyboard_layout_name())
+    print("Current input method:", get_keyboard_layout_name())

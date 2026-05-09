@@ -15,6 +15,6 @@ def maximize_top_window():
 
 if __name__ == '__main__':
     if maximize_top_window():
-        print("已最大化最上层窗口。")
+        print("Maximized the foreground window.")
     else:
-        print("未找到最上层窗口。")
+        print("No foreground window found.")

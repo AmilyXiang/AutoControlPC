@@ -82,6 +82,6 @@ if __name__ == '__main__':
     ocr = OcrTool(['en', 'ch_sim'], gpu=False)
     pos = ocr.find_text_position('Cui Ji')
     if pos:
-        print(f"找到 'Cui Ji' 位置: {pos}")
+        print(f"Found 'Cui Ji' position: {pos}")
     else:
-        print("未找到 'Cui Ji'")
+        print("'Cui Ji' not found")

@@ -32,10 +32,10 @@ def play_audio(file_path, device_id=None, duration=None):
     ext = os.path.splitext(file_path)[1].lower()
     # 播放前检测文件可读性
     if not os.path.isfile(file_path):
-        print(f"[AUDIO] 文件不存在: {file_path}")
+        print(f"[AUDIO] File not found: {file_path}")
         return False
     if not os.access(file_path, os.R_OK):
-        print(f"[AUDIO] 文件不可读: {file_path}")
+        print(f"[AUDIO] File not readable: {file_path}")
         return False
     
     # 优先用 simpleaudio 播放标准 wav/pcm
@@ -53,7 +53,7 @@ def play_audio(file_path, device_id=None, duration=None):
                 play_obj.wait_done()
             return True
         except Exception as e:
-            print(f"[AUDIO] simpleaudio 播放失败: {e}")
+            print(f"[AUDIO] simpleaudio playback failed: {e}")
     
     # 其次用 pygame 播放 mp3/wav（支持设备指定）
     if pygame:
@@ -73,7 +73,7 @@ def play_audio(file_path, device_id=None, duration=None):
                     pygame.time.Clock().tick(10)
             return True
         except Exception as e:
-            print(f"[AUDIO] pygame 播放失败: {e}")
+            print(f"[AUDIO] pygame playback failed: {e}")
     
     # 最后兜底用 pydub，静默处理异常
     if AudioSegment and play:
@@ -91,7 +91,7 @@ def play_audio(file_path, device_id=None, duration=None):
             return True
         except Exception:
             pass  # 静默处理所有异常
-    print(f"[AUDIO] 不支持的音频格式或缺少依赖: {file_path}")
+    print(f"[AUDIO] Unsupported audio format or missing dependency: {file_path}")
     return False
 
 if __name__ == '__main__':
@@ -99,8 +99,8 @@ if __name__ == '__main__':
     file_path = None
     
     if len(sys.argv) < 2:
-        print("用法: python audio_player.py <audio文件路径> [设备ID]")
-        print("提示: 查看设备列表请运行 python device_manager.py list")
+        print("Usage: python audio_player.py <audio_file_path> [device_id]")
+        print("Tip: run 'python device_manager.py list' to see available devices")
         sys.exit(1)
     
     file_path = sys.argv[1]

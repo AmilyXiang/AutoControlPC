@@ -19,7 +19,7 @@ _recording_state = {
 
 def record_audio(device_idx, duration, out_wav, samplerate=44100, channels=1):
     """同步录音，阻塞直到时长结束或被停止"""
-    print(f"录音设备: {device_idx}, 时长: {duration}s, 输出: {out_wav}")
+    print(f"[AUDIO] Recording device: {device_idx}, duration: {duration}s, output: {out_wav}")
     try:
         with _recording_state['lock']:
             _recording_state['is_recording'] = True
@@ -31,9 +31,9 @@ def record_audio(device_idx, duration, out_wav, samplerate=44100, channels=1):
             _recording_state['is_recording'] = False
         
         sf.write(out_wav, recording, samplerate)
-        print(f"录音完成，已保存: {out_wav}")
+        print(f"[AUDIO] Recording done, saved: {out_wav}")
     except Exception as e:
-        print(f"录音失败: {e}")
+        print(f"[AUDIO] Recording failed: {e}")
     finally:
         with _recording_state['lock']:
             _recording_state['is_recording'] = False
@@ -44,14 +44,14 @@ def stop_record():
         if _recording_state['is_recording']:
             sd.stop()
             _recording_state['is_recording'] = False
-            print("[AUDIO] 录音已停止")
+            print("[AUDIO] Recording stopped")
         else:
-            print("[AUDIO] 当前没有正在进行的录音")
+            print("[AUDIO] No recording in progress")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("用法: python audio_recorder.py record <device_idx> <duration秒> <输出wav文件> | stop")
-        print("提示: 查看设备列表请运行 python device_manager.py list")
+        print("Usage: python audio_recorder.py record <device_idx> <duration_sec> <output.wav> | stop")
+        print("Tip: run 'python device_manager.py list' to see available devices")
         sys.exit(1)
     if sys.argv[1] == 'record' and len(sys.argv) == 5:
         device_idx = int(sys.argv[2])
@@ -61,5 +61,5 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'stop':
         stop_record()
     else:
-        print("参数错误。用法: python audio_recorder.py record <device_idx> <duration秒> <输出wav文件> | stop")
+        print("Invalid args. Usage: python audio_recorder.py record <device_idx> <duration_sec> <output.wav> | stop")
 

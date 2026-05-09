@@ -65,6 +65,6 @@ EVENTS = {
 
 if __name__ == '__main__':
     # 打印所有事件
-    print("可用的网络事件类型:")
+    print("Available network event types:")
     for name, event in EVENTS.items():
         print(f"  {name:20} = {event.value}")

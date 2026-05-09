@@ -22,12 +22,12 @@ class ActionRecorder:
         self.actions = []
         self.start_time = time.time()
         self.recording = True
-        print("开始录制操作...")
+        print("Recording started...")
     
     def stop_recording(self):
         """停止记录操作"""
         self.recording = False
-        print(f"录制完成，共记录 {len(self.actions)} 个操作")
+        print(f"Recording done, {len(self.actions)} actions recorded")
         return self.actions
     
     def record_mouse_move(self, x: int, y: int, duration: float = 0):
@@ -87,14 +87,14 @@ class ActionRecorder:
                 'action_count': len(self.actions),
                 'actions': self.actions
             }, f, indent=2, ensure_ascii=False)
-        print(f"已保存到 {filename}")
+        print(f"Saved to {filename}")
     
     def load_from_file(self, filename: str):
         """从JSON文件加载操作序列"""
         with open(filename, 'r', encoding='utf-8') as f:
             data = json.load(f)
             self.actions = data['actions']
-        print(f"已加载 {len(self.actions)} 个操作")
+        print(f"Loaded {len(self.actions)} actions")
         return self.actions
 
 
@@ -122,7 +122,7 @@ class ActionPlayer:
             loop: 循环次数
         """
         for loop_count in range(loop):
-            print(f"开始回放 (循环 {loop_count + 1}/{loop})...")
+            print(f"Starting playback (loop {loop_count + 1}/{loop})...")
             
             prev_timestamp = 0
             for action in self.actions:
@@ -155,11 +155,11 @@ class ActionPlayer:
                 
                 prev_timestamp = action.get('timestamp', 0)
             
-            print(f"循环 {loop_count + 1} 完成")
+            print(f"Loop {loop_count + 1} done")
     
     def play_interactive(self):
         """交互式播放，可以暂停"""
-        print("开始交互式回放 (按 Ctrl+C 暂停)...")
+        print("Starting interactive playback (press Ctrl+C to pause)...")
         
         try:
             prev_timestamp = 0
@@ -192,14 +192,14 @@ class ActionPlayer:
                     ac.wait(action.get('duration', 0.5))
                 
                 # 显示进度
-                print(f"执行第 {idx + 1}/{len(self.actions)} 个操作: {action_type}")
+                print(f"Executing action {idx + 1}/{len(self.actions)}: {action_type}")
                 
                 prev_timestamp = action.get('timestamp', 0)
             
-            print("回放完成")
+            print("Playback complete")
         
         except KeyboardInterrupt:
-            print("\n回放已暂停")
+            print("\nPlayback paused")
 
 
 class ScriptBuilder:
@@ -250,7 +250,7 @@ class ScriptBuilder:
     
     def execute(self):
         """执行脚本"""
-        print(f"执行脚本，共 {len(self.actions)} 个操作...")
+        print(f"Executing script, {len(self.actions)} actions...")
         
         for idx, (action_type, args) in enumerate(self.actions):
             try:
@@ -271,13 +271,13 @@ class ScriptBuilder:
                 elif action_type == 'scroll':
                     ac.scroll_mouse(*args)
                 
-                print(f"  [{idx + 1}/{len(self.actions)}] {action_type} 完成")
+                print(f"  [{idx + 1}/{len(self.actions)}] {action_type} done")
             
             except Exception as e:
-                print(f"  [FAIL] 操作失败: {e}")
+                print(f"  [FAIL] Action failed: {e}")
                 return False
         
-        print("脚本执行完成")
+        print("Script execution complete")
         return True
     
     def save_as_code(self, filename: str):
@@ -324,4 +324,4 @@ class ScriptBuilder:
         with open(filename, 'w', encoding='utf-8') as f:
             f.write('\n'.join(code))
         
-        print(f"已保存脚本到 {filename}")
+        print(f"Script saved to {filename}")

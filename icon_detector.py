@@ -30,7 +30,7 @@ class IconDetector:
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
         template = cv2.imread(template_path)
         if template is None:
-            raise FileNotFoundError(f"模板图片未找到: {template_path}")
+            raise FileNotFoundError(f"Template image not found: {template_path}")
         template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         h, w = template_gray.shape[:2]
         res = cv2.matchTemplate(img_gray, template_gray, cv2.TM_CCOEFF_NORMED)
@@ -51,7 +51,7 @@ class IconDetector:
                 crop_img.save(debug_path)
                 debug_files.append(debug_path)
             except Exception as e:
-                print(f"保存匹配区域截图失败: {e}")
+                print(f"Failed to save match region screenshot: {e}")
         # 去重（防止重叠区域多次计数）
         matches = self._nms(matches, w, h)
         matches = sorted(matches, key=lambda x: -x[2])[:max_results]
@@ -60,7 +60,7 @@ class IconDetector:
                 try:
                     os.remove(debug_path)
                 except OSError as e:
-                    print(f"删除调试截图失败: {e}")
+                    print(f"Failed to delete debug screenshot: {e}")
         return matches
 
     def _nms(self, matches, w, h, iou_thresh=0.3):
@@ -95,4 +95,4 @@ if __name__ == '__main__':
     detector = IconDetector(threshold=0.8)
     matches = detector.find_icons('icon_template.png')
     for i, (x, y, score) in enumerate(matches):
-        print(f"匹配{i+1}: 位置=({x},{y}), 置信度={score:.2f}")
+        print(f"Match {i+1}: pos=({x},{y}), confidence={score:.2f}")

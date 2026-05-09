@@ -56,12 +56,12 @@ class P2PNetwork:
 
         if server_ok:
             if connect_ok:
-                print(f"[P2P] 网络已初始化 - 本地:{self.local_port}, 对端:{peer_host}:{peer_port}")
+                print(f"[P2P] Network initialized - local:{self.local_port}, peer:{peer_host}:{peer_port}")
             else:
-                print(f"[P2P] [WARN] 本地监听已启动，但暂未连接到对端 {peer_host}:{peer_port}")
+                print(f"[P2P] [WARN] Local listener started, but not yet connected to peer {peer_host}:{peer_port}")
             return True
 
-        print(f"[P2P] [FAIL] 网络初始化失败: 本地端口 {self.local_port} 监听未成功")
+        print(f"[P2P] [FAIL] Network init failed: local port {self.local_port} listen failed")
         return False
 
     def _get_local_ip(self):
@@ -100,12 +100,12 @@ class P2PNetwork:
             self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
             self.receive_thread.start()
             
-            print(f"[P2P] [OK] 接收服务器启动")
-            print(f"[P2P]   本地端口: {self.local_port}")
-            print(f"[P2P]   可连接地址: {self.local_ip}:{self.local_port}")
+            print(f"[P2P] [OK] Receive server started")
+            print(f"[P2P]   Local port: {self.local_port}")
+            print(f"[P2P]   Connectable address: {self.local_ip}:{self.local_port}")
             return True
         except Exception as e:
-            print(f"[P2P] 启动接收服务器失败: {e}")
+            print(f"[P2P] Failed to start receive server: {e}")
             return False
 
     def _receive_loop(self):
@@ -114,7 +114,7 @@ class P2PNetwork:
             while self.running:
                 try:
                     client_socket, addr = self.server_socket.accept()
-                    print(f"[P2P] 收到连接: {addr}")
+                    print(f"[P2P] Incoming connection: {addr}")
                     
                     # 在新线程处理连接
                     thread = threading.Thread(
@@ -125,9 +125,9 @@ class P2PNetwork:
                     thread.start()
                 except Exception as e:
                     if self.running:
-                        print(f"[P2P] 接收错误: {e}")
+                        print(f"[P2P] Receive error: {e}")
         except Exception as e:
-            print(f"[P2P] 接收循环出错: {e}")
+            print(f"[P2P] Receive loop error: {e}")
         finally:
             if self.server_socket:
                 self.server_socket.close()
@@ -147,18 +147,18 @@ class P2PNetwork:
                     with self.message_lock:
                         self.message_queue.append(message)
                     
-                    print(f"[P2P] 收到消息: {message}")
+                    print(f"[P2P] Message received: {message}")
                 except json.JSONDecodeError:
-                    print(f"[P2P] 无效的JSON: {data}")
+                    print(f"[P2P] Invalid JSON: {data}")
         except Exception as e:
-            print(f"[P2P] 客户端处理错误: {e}")
+            print(f"[P2P] Client handler error: {e}")
         finally:
             client_socket.close()
 
     def _connect_to_peer(self):
         """连接到对端（带重试机制）"""
         if not self.peer_host:
-            print(f"[P2P] 跳过连接: peer_host为空")
+            print(f"[P2P] Skip connect: peer_host is empty")
             return False
         
         max_retries = 10
@@ -166,26 +166,26 @@ class P2PNetwork:
         
         for attempt in range(max_retries):
             try:
-                print(f"[P2P] 尝试连接到对端 {self.peer_host}:{self.peer_port} (第 {attempt+1}/{max_retries} 次)...")
+                print(f"[P2P] Connecting to peer {self.peer_host}:{self.peer_port} (attempt {attempt+1}/{max_retries})...")
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.client_socket.settimeout(10)  # 设置10秒连接超时
                 self.client_socket.connect((self.peer_host, self.peer_port))
                 self.client_socket.settimeout(None)  # 连接成功后移除超时
-                print(f"[P2P] [OK] 已连接到对端 {self.peer_host}:{self.peer_port}")
+                print(f"[P2P] [OK] Connected to peer {self.peer_host}:{self.peer_port}")
                 return True
             except socket.timeout:
-                print(f"[P2P] 连接超时 (WinError 10060)，{retry_delay}秒后重试...")
+                print(f"[P2P] Connection timeout (WinError 10060), retrying in {retry_delay}s...")
                 self.client_socket = None
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
-                    print(f"[P2P] [FAIL] 连接失败: 达到最大重试次数")
+                    print(f"[P2P] [FAIL] Connection failed: max retries reached")
                     return False
             except Exception as e:
-                print(f"[P2P] 连接失败: {e}")
+                print(f"[P2P] Connection failed: {e}")
                 self.client_socket = None
                 if attempt < max_retries - 1:
-                    print(f"[P2P] {retry_delay}秒后重试...")
+                    print(f"[P2P] Retrying in {retry_delay}s...")
                     time.sleep(retry_delay)
                 else:
                     return False
@@ -216,30 +216,30 @@ class P2PNetwork:
         try:
             # 如果还没有连接，尝试连接
             if not self.client_socket:
-                print(f"[P2P] 发送前检查: client_socket为None，peer_host={self.peer_host}:{self.peer_port}")
+                print(f"[P2P] Pre-send check: client_socket is None, peer_host={self.peer_host}:{self.peer_port}")
                 if not self._connect_to_peer():
-                    print(f"[P2P] 发送失败: 无法连接到对端")
+                    print(f"[P2P] Send failed: cannot connect to peer")
                     return False
             
             if self.client_socket:
                 try:
                     self.client_socket.sendall(json.dumps(message).encode('utf-8'))
-                    print(f"[P2P] 发送消息: {event_name}, 数据: {data}")
+                    print(f"[P2P] Message sent: {event_name}, data: {data}")
                     return True
                 except Exception as e:
                     # 连接可能已断开，清除socket重试
-                    print(f"[P2P] 发送出错，尝试重新连接: {e}")
+                    print(f"[P2P] Send error, attempting reconnect: {e}")
                     self.client_socket = None
                     if self._connect_to_peer():
                         self.client_socket.sendall(json.dumps(message).encode('utf-8'))
-                        print(f"[P2P] 重连后发送成功: {event_name}")
+                        print(f"[P2P] Reconnect send success: {event_name}")
                         return True
                     return False
             else:
-                print(f"[P2P] 发送失败: 未连接到对端")
+                print(f"[P2P] Send failed: not connected to peer")
                 return False
         except Exception as e:
-            print(f"[P2P] 发送错误: {e}")
+            print(f"[P2P] Send error: {e}")
             return False
 
     def receive(self, event=None, timeout=30):
@@ -267,12 +267,12 @@ class P2PNetwork:
                     if target_event is None or msg.get('event') == target_event:
                         # 找到匹配的消息，移除并返回
                         self.message_queue.pop(i)
-                        print(f"[P2P] 接收消息: {msg.get('event')}, 数据: {msg.get('data')}")
+                        print(f"[P2P] Received message: {msg.get('event')}, data: {msg.get('data')}")
                         return msg
             
             time.sleep(0.1)  # 短暂等待后重试
         
-        print(f"[P2P] 接收消息超时 (事件: {target_event}, 超时: {timeout}秒)")
+        print(f"[P2P] Receive timeout (event: {target_event}, timeout: {timeout}s)")
         return None
 
     def stop(self):
@@ -293,7 +293,7 @@ class P2PNetwork:
                 pass
             self.server_socket = None
         
-        print("[P2P] 网络已停止")
+        print("[P2P] Network stopped")
 
 
 # 全局网络实例
@@ -332,9 +332,9 @@ if __name__ == '__main__':
     import sys
     
     if len(sys.argv) < 2:
-        print("用法: python p2p_network.py <mode> [args...]")
-        print("  模式1 (接收方): python p2p_network.py receiver 9998")
-        print("  模式2 (发送方): python p2p_network.py sender 192.168.1.100 9998 9999")
+        print("Usage: python p2p_network.py <mode> [args...]")
+        print("  Mode 1 (receiver): python p2p_network.py receiver 9998")
+        print("  Mode 2 (sender): python p2p_network.py sender 192.168.1.100 9998 9999")
         sys.exit(1)
     
     mode = sys.argv[1]
@@ -344,16 +344,16 @@ if __name__ == '__main__':
         network = P2PNetwork(local_port=local_port)
         network._start_server()
         
-        print(f"[TEST] 接收模式: 监听端口 {local_port}")
-        print("[TEST] 等待消息...")
+        print(f"[TEST] Receiver mode: listening on port {local_port}")
+        print("[TEST] Waiting for messages...")
         
         try:
             while True:
                 msg = network.receive(timeout=60)
                 if msg:
-                    print(f"[TEST] 收到: {msg}")
+                    print(f"[TEST] Received: {msg}")
                 else:
-                    print("[TEST] 超时，没有收到消息")
+                    print("[TEST] Timeout, no message received")
         except KeyboardInterrupt:
             network.stop()
     
@@ -365,7 +365,7 @@ if __name__ == '__main__':
         network = P2PNetwork(local_port=local_port)
         network.init(peer_host, peer_port)
         
-        print(f"[TEST] 发送模式: 发送给 {peer_host}:{peer_port}")
+        print(f"[TEST] Sender mode: sending to {peer_host}:{peer_port}")
         
         time.sleep(1)
         network.send(NetworkEvent.READY, {'message': 'hello'})

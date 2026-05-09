@@ -54,8 +54,8 @@ def detect_silence(audio_path, rms_threshold=0.001, noise_percentile=10, snr_thr
 
 def main():
     if len(sys.argv) < 2:
-        print("使用: python silence_detect.py <audio_file> [--rms THRESHOLD] [--percentile NUM] [--snr THRESHOLD]")
-        print("\n示例:")
+        print("Usage: python silence_detect.py <audio_file> [--rms THRESHOLD] [--percentile NUM] [--snr THRESHOLD]")
+        print("\nExample:")
         print("  python silence_detect.py test.wav")
         print("  python silence_detect.py test.wav --rms 0.01 --percentile 15 --snr 2.5")
         sys.exit(1)
@@ -64,7 +64,7 @@ def main():
     
     # 检查文件存在
     if not Path(audio_file).exists():
-        print(f"❌ 文件不存在: {audio_file}")
+        print(f"File not found: {audio_file}")
         sys.exit(1)
     
     # 解析参数
@@ -76,11 +76,11 @@ def main():
     result = detect_silence(audio_file, rms_threshold=rms_th, noise_percentile=percentile, snr_threshold=snr_th)
     
     # 输出结果
-    print(f"\n✓ 静音检测结果: {Path(audio_file).name}")
-    print(f"  是否静音: {'是' if result['is_silence'] else '否'}")
-    print(f"  平均RMS: {result['rms_mean']}")
-    print(f"  噪音底层: {result['noise_floor']}")
-    print(f"  信噪比: {result['snr']}")
+    print(f"\nSilence detection result: {Path(audio_file).name}")
+    print(f"  Is silence: {'yes' if result['is_silence'] else 'no'}")
+    print(f"  Mean RMS: {result['rms_mean']}")
+    print(f"  Noise floor: {result['noise_floor']}")
+    print(f"  SNR: {result['snr']}")
 
 
 if __name__ == "__main__":

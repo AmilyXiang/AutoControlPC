@@ -12,6 +12,14 @@ class MoveInterface:
         self.ser.send_command("G21")  # 设置单位为毫米
         self.ser.send_command("G90")  # 设置为绝对坐标模式
         self.ser.send_command("G92 X0 Y0 Z0")  # 设置当前坐标为原点
+        # 设置最大速度
+        self.ser.send_command(f"$110={self.settings.xyz_speed_max}")
+        self.ser.send_command(f"$111={self.settings.xyz_speed_max}")
+        self.ser.send_command(f"$112={self.settings.xyz_speed_max}")
+        # 设置最大加速度
+        self.ser.send_command(f"$120={self.settings.xyz_accelerate_max}")
+        self.ser.send_command(f"$121={self.settings.xyz_accelerate_max}")
+        self.ser.send_command(f"$122={self.settings.xyz_accelerate_max}")
         self.ser.send_command(f"F{self.settings.speed}")  # 设置默认速度
         self.ser.receive_response()
         self.X = 0

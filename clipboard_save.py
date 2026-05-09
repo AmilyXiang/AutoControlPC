@@ -12,7 +12,7 @@ def save_clipboard_to_txt(filename):
     content = pyperclip.paste()
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"已保存剪贴板内容到 {filename}")
+    print(f"Clipboard content saved to {filename}")
 
 def save_clipboard_to_csv(filename):
     # 支持动态时间变量 {now}
@@ -25,11 +25,11 @@ def save_clipboard_to_csv(filename):
     with open(filename, 'w', encoding='utf-8', newline='') as f:
         writer = csv.writer(f)
         writer.writerows(rows)
-    print(f"已保存剪贴板内容到 {filename} (csv格式)")
+    print(f"Clipboard content saved to {filename} (csv format)")
 
 def main():
     if len(sys.argv) < 3:
-        print("用法: python clipboard_save.py <txt/csv> <输出文件名>")
+        print("Usage: python clipboard_save.py <txt/csv> <output_filename>")
         return
     fmt = sys.argv[1].lower()
     filename = sys.argv[2]
@@ -38,7 +38,7 @@ def main():
     elif fmt == 'csv':
         save_clipboard_to_csv(filename)
     else:
-        print("暂不支持该格式，只支持txt和csv")
+        print("Unsupported format, only txt and csv are supported")
 
 if __name__ == '__main__':
     main()

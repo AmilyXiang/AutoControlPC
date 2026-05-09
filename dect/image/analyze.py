@@ -43,17 +43,46 @@ class Paddle_ocr:
             use_textline_orientation=True,
         )
     def preprocess_crop(self, crop_img):
-        denoised = cv2.medianBlur(crop_img, 5)
-        return denoised
+        """Preprocess a YOLO text-crop before OCR.
+
+        Steps:
+        1. Upscale small crops so OCR has enough pixels to work with.
+        2. Convert to grayscale → CLAHE for contrast enhancement
+           (helps with faded / low-contrast text like '60 sec' on blue bg).
+        3. Sharpen to make edges crisper.
+        4. Return as 3-channel (PaddleOCR expects BGR).
+        """
+        import numpy as np
+
+        h, w = crop_img.shape[:2]
+        # --- 1. Upscale small crops (target ≥ 64 px height) ---
+        scale = max(2.0, 64.0 / h) if h < 64 else 2.0
+        scaled = cv2.resize(crop_img, None, fx=scale, fy=scale,
+                            interpolation=cv2.INTER_CUBIC)
+
+        # --- 2. Grayscale + CLAHE ---
+        gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray)
+
+        # --- 3. Sharpen ---
+        blurred = cv2.GaussianBlur(enhanced, (0, 0), sigmaX=2)
+        sharpened = cv2.addWeighted(enhanced, 1.5, blurred, -0.5, 0)
+
+        # --- 4. Light denoise ---
+        denoised = cv2.medianBlur(sharpened, 3)
+
+        # Convert back to 3-channel for PaddleOCR
+        return cv2.cvtColor(denoised, cv2.COLOR_GRAY2BGR)
     def process_screen_ocr(self, img_np):
         """
-        对图片进行OCR识别，返回 [(text, score), ...] 格式的结果。
-        适配 PaddleOCR 3.x 新返回格式。
+        Run OCR on image, return [(text, score), ...].
+        Compatible with PaddleOCR 3.x new return format.
         """
         try:
             result = self.ocr.ocr(img_np)
             if not result:
-                print("未发现任何文字")
+                print("[OCR] No text found.")
                 return []
             # PaddleOCR 3.x 返回 list of dict，每个 dict 含 rec_texts, rec_scores
             texts = []
@@ -73,7 +102,7 @@ class Paddle_ocr:
                                 texts.append((str(line[1][0]), float(line[1][1])))
             return texts
         except Exception as e:
-            print(f"解析出错: {e}")
+            print(f"[OCR] Exception: {e}")
             return []
 
 class Analyze_icon_text:
@@ -101,16 +130,35 @@ class Analyze_icon_text:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
                     image_text = self.img[y1:y2, x1:x2]
                     img_for_ocr = self.ocr.preprocess_crop(image_text)
-                    print(f"[OCR] 裁剪区域: ({x1},{y1})-({x2},{y2}), shape={img_for_ocr.shape}")
+                    print(f"[OCR] Crop region: ({x1},{y1})-({x2},{y2}), shape={img_for_ocr.shape}")
                     
                     if img_for_ocr is None:
-                        print("错误：无法加载图片，请检查路径是否正确。")
+                        print("[OCR] ERROR: Unable to load image, please check path.")
                         continue
-                    ocr_result = self.ocr.process_screen_ocr(img_for_ocr)
+
+                    # Dual-pass OCR: try preprocessed first, fall back to raw
+                    # if raw gives higher confidence (handles cases where
+                    # preprocessing hurts good images but helps bad ones).
+                    ocr_enhanced = self.ocr.process_screen_ocr(img_for_ocr)
+                    ocr_raw = self.ocr.process_screen_ocr(image_text)
+
+                    # Pick the pass with higher average confidence
+                    def _avg_conf(results):
+                        if not results:
+                            return 0.0
+                        return sum(s for _, s in results) / len(results)
+
+                    if _avg_conf(ocr_enhanced) >= _avg_conf(ocr_raw):
+                        ocr_result = ocr_enhanced
+                        ocr_tag = "enhanced"
+                    else:
+                        ocr_result = ocr_raw
+                        ocr_tag = "raw"
+
                     if ocr_result:
                         if "text" not in res_dect:
                             res_dect["text"] = []
                         for text_str, confidence in ocr_result:
-                            print(f"[OCR] 识别文字: '{text_str}' (置信度: {confidence:.4f})")
+                            print(f"[OCR] Recognized text [{ocr_tag}]: '{text_str}' (confidence: {confidence:.4f})")
                             res_dect["text"].append(text_str)
         return res_dect
