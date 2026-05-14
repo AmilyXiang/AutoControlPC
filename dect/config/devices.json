@@ -2,11 +2,11 @@
     "1": {
         "com_port": "COM3",
         "camera_index": 0,
-        "ext_number": "20001"
+        "ext_number": "110"
     },
     "2": {
         "com_port": "COM5",
-        "camera_index": 0,
-        "ext_number": "20002"
+        "camera_index": 1,
+        "ext_number": "109"
     }
 }

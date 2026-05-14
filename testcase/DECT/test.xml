@@ -2,27 +2,27 @@
 <testcases>
     <testcase name="DECT_8262__debug_testcase">
         <!-- 1. 初始化 DECT 控制器 -->
-        <step type="dect" action="init" content="8262" device="1" />
-        <step type="dect" action="init" content="8262" device="2" />
+        <step type="dect" action="init" content="8234" device="1" />
+        <step type="dect" action="init" content="8234" device="2" />
         <step type="wait" action="sleep" content="1" />
 
         <!-- 2. 设备1拨打设备2的分机号 -->
         <step type="dect" action="dial_number" content="{device.2.ext_number}" interval="0.3" />
         <step type="dect" action="press_key" content="offhook" device="1"/>
+        <step type="dect" action="verify_screen" content='{"text": "{device.2.ext_number}"}' device="1"/>
 
         <!-- 4. 2号机摘机 -->
         <step type="dect" action="press_key" content="offhook" device="2"/>
         <step type="wait" action="sleep" content="2" />
+        <!--验证1号机接通-->
+        <step type="dect" action="verify_screen" content='{"text": "Connected"}' device="2"/>
+        <!-- 6. 挂机 -->
         <step type="dect" action="press_key" content="onhook" device="2"/>
         <step type="wait" action="sleep" content="2" />
 
-        <!-- 5. 再试一个带 * # 的号码 -->
-        <step type="dect" action="dial_number" content="*123#" interval="0.3" />
+        <!-- 验证挂机进入idle -->
+        <step type="dect" action="verify_screen" content='{"text": "{device.1.ext_number}"}' device="1"/>
         <step type="wait" action="sleep" content="1" />
-
-        <!-- 6. 挂机 -->
-        <step type="dect" action="press_key" content="onhook" />
-        <step type="wait" action="sleep" content="2" />
 
         <!-- 7. 回原点并关闭 -->
         <step type="dect" action="origin" />
