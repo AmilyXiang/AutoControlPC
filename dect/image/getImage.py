@@ -24,7 +24,7 @@ from MvCameraControl_class import *
 
 
 class CameraGrabber():
-    def __init__(self, camera_index=0):
+    def __init__(self, camera_name=""):
         MvCamera.MV_CC_Initialize()
         CameraOperation.set_exposure_time = 60000
 
@@ -81,7 +81,25 @@ class CameraGrabber():
                 strSerialNumber = self.decoding_char(mvcc_dev_info.SpecialInfo.stXoFInfo.chSerialNumber)
                 print ("user serial number: %s" % strSerialNumber)
 
-        nConnectionNum = camera_index
+        # 按摄像头名字查找设备
+        nConnectionNum = -1
+        if camera_name:
+            for i in range(0, deviceList.nDeviceNum):
+                mvcc_info = cast(deviceList.pDeviceInfo[i], POINTER(MV_CC_DEVICE_INFO)).contents
+                user_name = ""
+                if mvcc_info.nTLayerType == MV_USB_DEVICE:
+                    user_name = self.decoding_char(mvcc_info.SpecialInfo.stUsb3VInfo.chUserDefinedName)
+                elif mvcc_info.nTLayerType == MV_GIGE_DEVICE or mvcc_info.nTLayerType == MV_GENTL_GIGE_DEVICE:
+                    user_name = self.decoding_char(mvcc_info.SpecialInfo.stGigEInfo.chUserDefinedName)
+                if user_name == camera_name:
+                    nConnectionNum = i
+                    print(f"[Camera] Found camera '{camera_name}' at index {i}")
+                    break
+            if nConnectionNum == -1:
+                print(f"[Camera] Camera '{camera_name}' not found!")
+                sys.exit()
+        else:
+            nConnectionNum = 0
 
         if int(nConnectionNum) >= deviceList.nDeviceNum:
             print ("intput error!")

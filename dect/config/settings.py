@@ -12,7 +12,7 @@ _device_configs = None
 @dataclass
 class DeviceConfig:
     com_port: str
-    camera_index: int = 0
+    camera_name: str = ""
     ext_number: str = ""
 
     @classmethod

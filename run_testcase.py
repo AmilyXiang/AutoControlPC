@@ -55,6 +55,35 @@ def _resolve_device_vars(text):
         raise ValueError(f"DeviceConfig has no field '{field}' (device={device_id})")
     return re.sub(r'\{device\.(\w+)\.(\w+)\}', _replacer, text)
 
+# --- 异步音频线程追踪 ---
+_async_audio_threads = []  # [(thread, error_holder), ...]
+
+class _ThreadWithError:
+    """包装线程目标函数，捕获异常供主线程检查。"""
+    def __init__(self, target, args=()):
+        self.error = None
+        self._target = target
+        self._args = args
+
+    def run(self):
+        try:
+            self._target(*self._args)
+        except Exception as e:
+            self.error = e
+
+def _check_async_audio_threads():
+    """Join所有异步音频线程，如有失败则抛出AssertionError。"""
+    global _async_audio_threads
+    errors = []
+    for t, holder in _async_audio_threads:
+        t.join()
+        if holder.error:
+            errors.append(str(holder.error))
+    _async_audio_threads = []
+    if errors:
+        raise AssertionError(f"[AUDIO] Async audio failed: {'; '.join(errors)}")
+
+
 def execute_step(step):
     step_type = step.get('type')
     action = step.get('action')
@@ -89,15 +118,17 @@ def execute_step(step):
             ok = play_audio(content, device_arg, duration_arg)
             print(f"[AUDIO] Play audio: {content} {'success' if ok else 'failed'}" + (f" (duration: {duration_arg}s)" if duration_arg else ""))
         elif action == 'play_async':
-            # 异步播放，不阻塞后续步骤
+            # 异步播放，不阻塞后续步骤，失败时fail case
             from audio_player import play_audio
             device_str = step.get('device', '-1')
             device_idx = get_device_id(device_str)
             device_arg = device_idx if device_idx is not None and device_idx >= 0 else None
             time_duration = step.get('time')
             duration_arg = float(time_duration) if time_duration else None
-            thread = threading.Thread(target=play_audio, args=(content, device_arg, duration_arg), daemon=True)
+            holder = _ThreadWithError(target=play_audio, args=(content, device_arg, duration_arg))
+            thread = threading.Thread(target=holder.run, daemon=True)
             thread.start()
+            _async_audio_threads.append((thread, holder))
             device_display = f"'{device_str}' (ID={device_idx})" if device_idx is not None else (device_str if device_str != '-1' else 'default')
             print(f"[AUDIO] Async play audio: {content}, device: {device_display}" + (f", duration: {duration_arg}s" if duration_arg else ""))
         elif action == 'record':
@@ -112,7 +143,7 @@ def execute_step(step):
             record_audio(device_idx, duration, output_file)
             print(f"[AUDIO] Recording completed: {output_file}")
         elif action == 'record_async':
-            # 异步录音，不阻塞后续步骤
+            # 异步录音，不阻塞后续步骤，失败时fail case
             from audio_recorder import record_audio
             device_str = step.get('device', '0')
             device_idx = get_device_id(device_str)
@@ -120,8 +151,10 @@ def execute_step(step):
                 device_idx = 0
             duration = float(step.get('duration', 5))
             output_file = content
-            thread = threading.Thread(target=record_audio, args=(device_idx, duration, output_file), daemon=True)
+            holder = _ThreadWithError(target=record_audio, args=(device_idx, duration, output_file))
+            thread = threading.Thread(target=holder.run, daemon=True)
             thread.start()
+            _async_audio_threads.append((thread, holder))
             device_display = f"'{device_str}' (ID={device_idx})" if device_str != '0' else '0'
             print(f"[AUDIO] Async recording started, device: {device_display}, duration: {duration}s, output: {output_file}")
         elif action == 'stop_record':
@@ -129,6 +162,8 @@ def execute_step(step):
             from audio_recorder import stop_record
             stop_record()
         elif action == 'check_voice':
+            # 先检查异步音频线程是否有失败
+            _check_async_audio_threads()
             # 检测音频文件是否有声音
             from audio_voice_detector import detect_silence
             audio_file = content
@@ -345,7 +380,7 @@ def execute_step(step):
         from dect_controller import init_dect_controller, get_dect_controller, close_dect_controller
         device_id = step.get('device', '1')
         if action == 'init':
-            # content: 设备型号 (例如: 8262), com_port和camera_index从setting.py的DEVICE_CONFIG读取
+            # content: 设备型号 (例如: 8262), com_port和camera_name从devices.json读取
             model = content if content else '8262'
             init_dect_controller(model=model, device_id=device_id)
         elif action == 'press_key':

@@ -113,13 +113,13 @@ _movers = {}
 _layouts = {}
 _cached_models = {}
 _cached_com_ports = {}
-_cached_camera_indices = {}
+_cached_camera_names = {}
 
 # Analyzer (YOLO + PaddleOCR) is shared across all devices
 _analyzer = None
 
 
-def _ensure_vision_loaded(device_id="1", camera_index=0):
+def _ensure_vision_loaded(device_id="1", camera_name=""):
     """Load YOLO + PaddleOCR models (shared) and start camera for specified device."""
     global _analyzer
     import time as _t
@@ -138,36 +138,36 @@ def _ensure_vision_loaded(device_id="1", camera_index=0):
         print("[DECT] Vision models already loaded, reusing")
 
     if device_id not in _grabbers:
-        # 检查是否有其他设备已经打开了相同 camera_index 的摄像头，若有则共用
+        # 检查是否有其他设备已经打开了相同 camera_name 的摄像头，若有则共用
         existing = None
-        for did, idx in _cached_camera_indices.items():
-            if idx == camera_index and did in _grabbers:
+        for did, name in _cached_camera_names.items():
+            if name == camera_name and did in _grabbers:
                 existing = did
                 break
         if existing:
             _grabbers[device_id] = _grabbers[existing]
-            _cached_camera_indices[device_id] = camera_index
-            print(f"[DECT] Camera[{device_id}] sharing camera (index={camera_index}) with device {existing}")
+            _cached_camera_names[device_id] = camera_name
+            print(f"[DECT] Camera[{device_id}] sharing camera (name={camera_name}) with device {existing}")
         else:
             from dect.image.getImage import CameraGrabber
             t_cam0 = _t.time()
-            _grabbers[device_id] = CameraGrabber(camera_index=camera_index)
+            _grabbers[device_id] = CameraGrabber(camera_name=camera_name)
             _grabbers[device_id].start_grabbing()
-            _cached_camera_indices[device_id] = camera_index
+            _cached_camera_names[device_id] = camera_name
             t_cam1 = _t.time()
-            print(f"[DECT][T] vision camera[{device_id}] (index={camera_index}): {t_cam1 - t_cam0:.3f}s")
-    elif _cached_camera_indices.get(device_id) != camera_index:
-        # Camera index changed, recreate
+            print(f"[DECT][T] vision camera[{device_id}] (name={camera_name}): {t_cam1 - t_cam0:.3f}s")
+    elif _cached_camera_names.get(device_id) != camera_name:
+        # Camera name changed, recreate
         try:
             _grabbers[device_id].stop_grabbing()
             _grabbers[device_id].close()
         except Exception:
             pass
         from dect.image.getImage import CameraGrabber
-        _grabbers[device_id] = CameraGrabber(camera_index=camera_index)
+        _grabbers[device_id] = CameraGrabber(camera_name=camera_name)
         _grabbers[device_id].start_grabbing()
-        _cached_camera_indices[device_id] = camera_index
-        print(f"[DECT] Camera[{device_id}] re-initialized with index={camera_index}")
+        _cached_camera_names[device_id] = camera_name
+        print(f"[DECT] Camera[{device_id}] re-initialized with name={camera_name}")
     else:
         print(f"[DECT] Camera[{device_id}] already open, reusing")
 
@@ -203,7 +203,7 @@ def _ensure_motion_loaded(device_id, model, com_port):
 class DectController:
     """High-level controller for DECT phone hardware interaction."""
 
-    def __init__(self, model="8262", com_port=None, device_id="1", camera_index=0):
+    def __init__(self, model="8262", com_port=None, device_id="1", camera_name=""):
         self.device_id = device_id
         # Ensure MvCamera SDK path is set up
         _mvcam_env = os.getenv('MVCAM_COMMON_RUNENV')
@@ -218,7 +218,7 @@ class DectController:
         self.mover = _movers[device_id]
 
         # Eagerly load vision at init time so first capture/verify is fast
-        _ensure_vision_loaded(device_id, camera_index)
+        _ensure_vision_loaded(device_id, camera_name)
         self.grabber = _grabbers[device_id]
         self.analyzer = _analyzer
         print(f"[DECT] Init complete: device={device_id}, model={model}")
@@ -226,8 +226,8 @@ class DectController:
     def _ensure_vision(self):
         """Ensure vision subsystem is available (uses module-level cache)."""
         if self.grabber is None:
-            camera_index = _cached_camera_indices.get(self.device_id, 0)
-            _ensure_vision_loaded(self.device_id, camera_index)
+            camera_name = _cached_camera_names.get(self.device_id, "")
+            _ensure_vision_loaded(self.device_id, camera_name)
             self.grabber = _grabbers[self.device_id]
             self.analyzer = _analyzer
 
@@ -236,8 +236,7 @@ class DectController:
     def press_key(self, key_name, press_type="short"):
         """Move to key position and press it."""
         if key_name not in self.layout.layout:
-            print(f"[DECT] Unknown key: {key_name}")
-            return False
+            raise AssertionError(f"[DECT] Unknown key: '{key_name}', available: {list(self.layout.layout.keys())}")
         x, y = self.layout.layout[key_name]
         self.mover.move_plain(x, y, self.mover.Z)
         self.ser.receive_response()
@@ -279,12 +278,13 @@ class DectController:
         t2 = _time.time()
         print(f"[DECT][T] grab_image: {t2 - t1:.3f}s")
         if img_color is None:
-            print("[DECT] Image capture failed")
-            return {}
+            raise AssertionError(f"[DECT] Image capture failed for device {self.device_id}")
         # 保存调试图片
         debug_dir = os.path.join(os.path.dirname(__file__), "png", "debug")
         os.makedirs(debug_dir, exist_ok=True)
-        debug_path = os.path.join(debug_dir, f"capture_{int(_time.time())}.png")
+        cam_name = _cached_camera_names.get(self.device_id, "unknown")
+        timestamp = _time.strftime("%Y%m%d_%H%M%S")
+        debug_path = os.path.join(debug_dir, f"{cam_name}_{timestamp}.png")
         cv2.imwrite(debug_path, img_color)
         print(f"[DECT] Debug image saved: {debug_path}")
 
@@ -351,7 +351,9 @@ class DectController:
                     all_pass = False
         tv2 = _time.time()
         print(f"[DECT][T] verify_screen total: {tv2 - tv0:.3f}s ({'PASS' if all_pass else 'FAIL'})")
-        return all_pass
+        if not all_pass:
+            raise AssertionError(f"[DECT] Screen verify FAIL on device {self.device_id}: expected={expected}, actual={result}")
+        return True
 
     def close(self):
         """Detach from cached resources. Nothing is destroyed — all reused next init."""
@@ -373,14 +375,14 @@ def get_dect_controller(device_id="1"):
 def init_dect_controller(model="8262", device_id="1"):
     """Initialize a DectController for the specified device.
     
-    com_port and camera_index are read from devices.json via dect.config.
+    com_port and camera_name are read from devices.json via dect.config.
     """
     from dect.config.settings import get_device_config
     cfg = get_device_config(device_id)
     _controllers[device_id] = DectController(model=model,
                                               com_port=cfg.com_port,
                                               device_id=device_id,
-                                              camera_index=cfg.camera_index)
+                                              camera_name=cfg.camera_name)
     return _controllers[device_id]
 
 
@@ -409,7 +411,7 @@ def destroy_all():
             except Exception:
                 pass
     _grabbers.clear()
-    _cached_camera_indices.clear()
+    _cached_camera_names.clear()
     _analyzer = None
     # Close all serial ports
     for device_id, serial in list(_serials.items()):
