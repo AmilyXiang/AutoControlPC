@@ -40,9 +40,9 @@ def detect_silence(audio_path, rms_threshold=0.001, noise_percentile=10, snr_thr
     # 计算信噪比
     snr = signal_rms / (noise_floor + 1e-10)
     
-    # 判定：整体RMS很低 且 信噪比小于阈值 = 静音
+    # 判定：整体RMS很低即为静音（当RMS极低时SNR无意义，不再要求SNR也满足）
     rms_mean = np.mean(rms_values)
-    is_silence = (rms_mean < rms_threshold) and (snr < snr_threshold)
+    is_silence = (rms_mean < rms_threshold) or ((rms_mean < rms_threshold * 10) and (snr < snr_threshold))
     
     return {
         "is_silence": is_silence,
@@ -54,10 +54,10 @@ def detect_silence(audio_path, rms_threshold=0.001, noise_percentile=10, snr_thr
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python silence_detect.py <audio_file> [--rms THRESHOLD] [--percentile NUM] [--snr THRESHOLD]")
+        print("Usage: python audio_voice_detector.py <audio_file> [--rms THRESHOLD] [--percentile NUM] [--snr THRESHOLD]")
         print("\nExample:")
-        print("  python silence_detect.py test.wav")
-        print("  python silence_detect.py test.wav --rms 0.01 --percentile 15 --snr 2.5")
+        print("  python audio_voice_detector.py test.wav")
+        print("  python audio_voice_detector.py test.wav --rms 0.01 --percentile 15 --snr 2.5")
         sys.exit(1)
     
     audio_file = sys.argv[1]
