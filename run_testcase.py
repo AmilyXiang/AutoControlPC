@@ -408,6 +408,17 @@ def execute_step(step):
             success = ctrl.verify_screen(expected)
             if not success:
                 raise AssertionError(f"DECT screen verification failed: expected {content}")
+        elif action == 'press_and_verify':
+            # content: 按键名, verify: JSON格式的期望结果
+            # 按键后立即拍照验证，无间隔延时
+            import json
+            ctrl = get_dect_controller(device_id)
+            press_type = step.get('press_type', 'short')
+            verify_content = step.get('verify')
+            if not verify_content:
+                raise ValueError("press_and_verify requires 'verify' attribute with JSON expected result")
+            expected = json.loads(verify_content)
+            ctrl.press_and_verify(content, expected, press_type=press_type)
         elif action == 'capture':
             # 仅拍照分析，不验证
             ctrl = get_dect_controller(device_id)

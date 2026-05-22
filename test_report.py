@@ -117,7 +117,7 @@ class TestReport:
     <div class="card fail-card"><div class="num">{failed}</div><div class="label">Failed</div></div>
     <div class="card skip-card"><div class="num">{skipped}</div><div class="label">Skipped</div></div>
     <div class="card rate"><div class="num">{pass_rate}%</div><div class="label">Pass Rate</div></div>
-    <div class="card time"><div class="num">{total_duration:.1f}s</div><div class="label">Total Duration</div></div>
+    <div class="card time"><div class="num">{total_duration / 60:.1f}min</div><div class="label">Total Duration</div></div>
 </div>
 
 <table>

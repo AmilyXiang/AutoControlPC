@@ -399,13 +399,118 @@ python run_testcase.py testcase/DECT/ MyCaseName
 | ocr | find_and_click | OCR定位并点击 |
 | window | maximize_top | 最大化顶部窗口 |
 | icon | find_and_move | 图标检测并移动鼠标 |
-| dect | init | 初始化 DECT 控制器（支持 `device` 指定设备） |
-| dect | press_key | DECT 按键操作（支持 `press_type`） |
-| dect | dial_number | 整串号码拨号（支持 `interval` 和 `{device.X.field}` 变量） |
-| dect | verify_screen | 验证 DECT 屏幕内容（支持拼接匹配） |
-| dect | capture | 仅抓图并分析 |
+| dect | init | 初始化 DECT 控制器 |
+| dect | press_key | DECT 按键操作 |
+| dect | dial_number | 整串号码拨号 |
+| dect | verify_screen | 验证 DECT 屏幕内容 |
+| dect | press_and_verify | 按键后立即验证屏幕（无间隔延时） |
+| dect | capture | 仅抓图并分析（不验证） |
 | dect | origin | 机械回原点 |
 | dect | close | 断开控制器（资源保留供下一个 case 复用） |
+
+### DECT 各 action 参数详解
+
+#### `init` — 初始化控制器
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `content` | 否 | `"8262"` | 设备型号（决定按键布局），如 `8262`、`8234` |
+| `device` | 否 | `"1"` | 设备编号，对应 `dect/config/devices.json` 中的 key |
+
+```xml
+<step type="dect" action="init" content="8234" device="1" />
+```
+
+#### `press_key` — 按键
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `content` | 是 | — | 按键名（如 `0`-`9`、`*`、`#`、`ok`、`menu`、`up`、`down`、`left`、`right`、`back`、`offhook`、`onhook`、`sk1`、`sk2`、`sk3`） |
+| `press_type` | 否 | `"short"` | `short` 短按 / `long` 长按 |
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="press_key" content="ok" press_type="long" device="1" />
+```
+
+#### `dial_number` — 整串拨号
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `content` | 是 | — | 号码字符串，支持 `0-9`、`*`、`#`，支持 `{device.X.field}` 变量 |
+| `interval` | 否 | `0.5` | 每个按键之间的间隔（秒） |
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="dial_number" content="{device.2.ext_number}" device="1" />
+```
+
+#### `verify_screen` — 屏幕验证
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `content` | 是 | — | JSON 格式的期望结果 |
+| `device` | 否 | `"1"` | 设备编号 |
+
+**content 格式**：
+- 验证文本（单个）：`{"text": "Connected"}`
+- 验证文本（多个）：`{"text": ["Base station", "SW version", "IP address"]}`
+- 验证图标：`{"hold": true, "conference": true}`
+- 混合验证：`{"text": "Connected", "hold": true, "transfer": true}`
+
+```xml
+<!-- 单文本 -->
+<step type="dect" action="verify_screen" content='{"text": "Connected"}' device="1" />
+<!-- 多文本一次验证 -->
+<step type="dect" action="verify_screen" content='{"text": ["Keylock", "Press and hold"]}' device="1" />
+<!-- 文本 + 图标 -->
+<step type="dect" action="verify_screen" content='{"text": "Connected", "hold": true, "conference": true}' device="1" />
+```
+
+#### `press_and_verify` — 按键后立即验证
+
+按键完成后立即拍照验证，不经过 step 间的 0.3s 延时。适用于屏幕内容转瞬即逝的场景。
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `content` | 是 | — | 按键名（同 `press_key`） |
+| `press_type` | 否 | `"short"` | `short` / `long` |
+| `verify` | 是 | — | JSON 格式的期望结果（同 `verify_screen` 的 content） |
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="press_and_verify" content="sk3" press_type="long" verify='{"text": "Call ended"}' device="1" />
+```
+
+#### `capture` — 仅抓图分析
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="capture" device="1" />
+```
+
+#### `origin` — 机械回原点
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="origin" device="1" />
+```
+
+#### `close` — 关闭控制器
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `device` | 否 | `"1"` | 设备编号 |
+
+```xml
+<step type="dect" action="close" device="1" />
+```
 
 ## 网络事件系统
 
