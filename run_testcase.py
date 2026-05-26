@@ -430,6 +430,73 @@ def execute_step(step):
             close_dect_controller(device_id)
     time.sleep(0.3)
 
+
+def execute_if_block(elem):
+    """Execute an <if> block: check screen condition, run child steps if matched.
+
+    XML syntax:
+        <if type="dect" check='{"lock": true}' device="1">
+            <step ... />
+            <else>
+                <step ... />
+            </else>
+        </if>
+
+    Returns number of child steps executed.
+    """
+    import json
+    block_type = elem.get('type')
+    if block_type != 'dect':
+        print(f"[IF] Unsupported if-block type: {block_type}, skipping")
+        return 0
+
+    device_id = elem.get('device', '1')
+    check_str = elem.get('check')
+    if not check_str:
+        print("[IF] Missing 'check' attribute on <if> block, skipping")
+        return 0
+
+    from dect_controller import get_dect_controller
+    ctrl = get_dect_controller(device_id)
+    result = ctrl.capture_and_analyze()
+
+    expected = json.loads(check_str)
+    condition_met = True
+    for key, value in expected.items():
+        if key == "text":
+            texts = result.get("text", [])
+            check_texts = [value] if isinstance(value, str) else list(value)
+            for t in check_texts:
+                joined = ' '.join(texts)
+                if t not in texts and t not in joined:
+                    condition_met = False
+                    break
+        else:
+            if key not in result:
+                condition_met = False
+                break
+
+    count = 0
+    if condition_met:
+        print(f"[IF] Condition met: {check_str} -> executing child steps")
+        for child in elem:
+            if child.tag == 'step':
+                execute_step(child)
+                count += 1
+            elif child.tag == 'else':
+                pass  # skip else block
+    else:
+        print(f"[IF] Condition NOT met: {check_str} -> executing <else> block")
+        else_block = elem.find('else')
+        if else_block is not None:
+            for child in else_block.findall('step'):
+                execute_step(child)
+                count += 1
+        else:
+            print("[IF] No <else> block, skipping")
+    return count
+
+
 def execute_testcases(xml_path, testcase_name=None, report=None):
     from test_report import TestReport
     if report is None:
@@ -448,9 +515,14 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
         tc_start = time.time()
         steps_done = 0
         try:
-            for step in testcase.findall('step'):
-                execute_step(step)
-                steps_done += 1
+            for elem in testcase:
+                if elem.tag == 'step':
+                    execute_step(elem)
+                    steps_done += 1
+                elif elem.tag == 'if':
+                    executed = execute_if_block(elem)
+                    if executed:
+                        steps_done += executed
             tc_duration = time.time() - tc_start
             report.add_result(display_name, 'PASS', tc_duration, steps_done=steps_done)
         except Exception as e:
@@ -461,6 +533,11 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
             try:
                 from dect_controller import _controllers
                 for did, ctrl in _controllers.items():
+                    try:
+                        ctrl.press_key("onhook")
+                        print(f"[DECT] Error recovery: device {did} pressed onhook")
+                    except Exception:
+                        pass
                     try:
                         ctrl.origin()
                         print(f"[DECT] Error recovery: device {did} returned to origin")

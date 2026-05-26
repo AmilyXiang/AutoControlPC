@@ -14,6 +14,11 @@ class DeviceConfig:
     com_port: str
     camera_name: str = ""
     ext_number: str = ""
+    ext_name: str = ""
+    emergency_number: str = ""
+    IPEI_hex: str = ""
+    IPEI_dec: str = ""
+    IPEI_oct: str = ""
 
     @classmethod
     def from_dict(cls, d: dict) -> "DeviceConfig":

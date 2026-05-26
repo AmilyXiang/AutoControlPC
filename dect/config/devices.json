@@ -2,11 +2,18 @@
     "1": {
         "com_port": "COM3",
         "camera_name": "camera1",
-        "ext_number": "110"
+        "ext_number": "110",
+        "ext_name": "WY 10",
+        "emergency_number": "911",
+        "IPEI_hex": "0134A0A944",
+        "IPEI_dec": "04938 0043332 2",
+        "IPEI_oct": "046450124504"
     },
     "2": {
         "com_port": "COM5",
         "camera_name": "camera2",
-        "ext_number": "109"
+        "ext_number": "109",
+        "ext_name": "WY 9",
+        "emergency_number": "911"
     }
 }
