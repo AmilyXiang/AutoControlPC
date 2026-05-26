@@ -118,6 +118,8 @@ class Analyze_icon_text:
         if results is None:
             results = self.results
         res_dect = {}
+        text_crops = []   # collect all text crops for batch OCR
+        crop_infos = []   # for debug logging
         for result in results:
             boxes = result.boxes
             for box in boxes:
@@ -130,35 +132,31 @@ class Analyze_icon_text:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
                     image_text = self.img[y1:y2, x1:x2]
                     img_for_ocr = self.ocr.preprocess_crop(image_text)
-                    print(f"[OCR] Crop region: ({x1},{y1})-({x2},{y2}), shape={img_for_ocr.shape}")
-                    
                     if img_for_ocr is None:
                         print("[OCR] ERROR: Unable to load image, please check path.")
                         continue
+                    crop_infos.append((x1, y1, x2, y2, img_for_ocr.shape))
+                    text_crops.append(img_for_ocr)
 
-                    # Dual-pass OCR: try preprocessed first, fall back to raw
-                    # if raw gives higher confidence (handles cases where
-                    # preprocessing hurts good images but helps bad ones).
-                    ocr_enhanced = self.ocr.process_screen_ocr(img_for_ocr)
-                    ocr_raw = self.ocr.process_screen_ocr(image_text)
-
-                    # Pick the pass with higher average confidence
-                    def _avg_conf(results):
-                        if not results:
-                            return 0.0
-                        return sum(s for _, s in results) / len(results)
-
-                    if _avg_conf(ocr_enhanced) >= _avg_conf(ocr_raw):
-                        ocr_result = ocr_enhanced
-                        ocr_tag = "enhanced"
-                    else:
-                        ocr_result = ocr_raw
-                        ocr_tag = "raw"
-
-                    if ocr_result:
-                        if "text" not in res_dect:
-                            res_dect["text"] = []
-                        for text_str, confidence in ocr_result:
-                            print(f"[OCR] Recognized text [{ocr_tag}]: '{text_str}' (confidence: {confidence:.4f})")
-                            res_dect["text"].append(text_str)
+        # Batch OCR: single call for all text crops
+        if text_crops:
+            res_dect["text"] = []
+            ocr_results = self.ocr.ocr.ocr(text_crops)
+            for i, page in enumerate(ocr_results):
+                x1, y1, x2, y2, shape = crop_infos[i]
+                print(f"[OCR] Crop region: ({x1},{y1})-({x2},{y2}), shape={shape}")
+                if page is None:
+                    continue
+                if isinstance(page, dict):
+                    rec_texts = page.get('rec_texts', [])
+                    rec_scores = page.get('rec_scores', [])
+                    for t, s in zip(rec_texts, rec_scores):
+                        print(f"[OCR] Recognized text: '{t}' (confidence: {s:.4f})")
+                        res_dect["text"].append(t)
+                elif isinstance(page, list):
+                    for line in page:
+                        if line and len(line) >= 2:
+                            t, s = str(line[1][0]), float(line[1][1])
+                            print(f"[OCR] Recognized text: '{t}' (confidence: {s:.4f})")
+                            res_dect["text"].append(t)
         return res_dect

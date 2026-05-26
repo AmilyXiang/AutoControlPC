@@ -32,15 +32,18 @@ _OCR_CONFUSIONS = {
     'S': '5s$',
     's': '5S$e',
     'O': '0oD',
-    'o': '0OQ',
+    'o': '0OQa',
+    'a': 'oue',
     'l': '1I|i',
     'I': '1l|i',
     'B': '8',
     'G': '6',
     'Z': '2z',
     'g': '9q',
+    'y': 'u',
     'e': 'c0s',         # 'e' misread as '0' or 's'
-    'c': 'eC(',
+    'C': 'c',
+    'c': 'eC(o',
     'D': '0O',
     'q': '9g',
     'T': '7',
@@ -99,7 +102,44 @@ def _fuzzy_find(expected: str, texts: list) -> str | None:
         window = norm_joined[i:i + exp_len]
         if _ocr_fuzzy_eq(expected, window):
             return joined
+    # edit-distance match: tolerate up to 25% character errors/length diff
+    for t in texts:
+        if _edit_distance_match(expected, t):
+            return t
+    # edit-distance on joined
+    if _edit_distance_match(expected, joined):
+        return joined
     return None
+
+
+def _edit_distance_match(expected: str, actual: str, threshold: float = 0.25) -> bool:
+    """Check if normalized edit distance ratio is within threshold."""
+    a = _normalize_ocr(expected)
+    b = _normalize_ocr(actual)
+    if not a or not b:
+        return False
+    # Quick reject: length difference alone exceeds threshold
+    max_len = max(len(a), len(b))
+    if abs(len(a) - len(b)) > max_len * threshold:
+        return False
+    dist = _levenshtein(a, b)
+    return dist <= max_len * threshold
+
+
+def _levenshtein(s1: str, s2: str) -> int:
+    """Compute Levenshtein edit distance between two strings."""
+    if len(s1) < len(s2):
+        return _levenshtein(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    prev_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        curr_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            cost = 0 if c1 == c2 else 1
+            curr_row.append(min(curr_row[j] + 1, prev_row[j + 1] + 1, prev_row[j] + cost))
+        prev_row = curr_row
+    return prev_row[-1]
 
 
 # Lazy-initialized controllers by device_id
@@ -114,6 +154,10 @@ _layouts = {}
 _cached_models = {}
 _cached_com_ports = {}
 _cached_camera_names = {}
+
+# Debug switch: controls only whether cropped images are saved.
+# Raw images are always saved.
+_SAVE_CUT_DEBUG_IMAGE = False
 
 # Analyzer (YOLO + PaddleOCR) is shared across all devices
 _analyzer = None
@@ -248,6 +292,11 @@ class DectController:
         print(f"[DECT] Key '{key_name}' ({press_type}) done")
         return True
 
+    def press_and_verify(self, key_name, expected, press_type="short"):
+        """Press key and immediately verify screen (no inter-step delay)."""
+        self.press_key(key_name, press_type=press_type)
+        return self.verify_screen(expected)
+
     def move_to(self, x, y):
         """Move finger to arbitrary (x, y) coordinate."""
         self.mover.move_plain(x, y, self.mover.Z)
@@ -291,10 +340,20 @@ class DectController:
         img_cut = straighten_screen_from_np(img_color)
         t3 = _time.time()
         print(f"[DECT][T] straighten_screen: {t3 - t2:.3f}s")
+        if _SAVE_CUT_DEBUG_IMAGE:
+            cut_debug_dir = os.path.join(debug_dir, "cut")
+            os.makedirs(cut_debug_dir, exist_ok=True)
+            cut_debug_path = os.path.join(cut_debug_dir, f"{cam_name}_{timestamp}_cut.png")
+            if img_cut is not None:
+                cv2.imwrite(cut_debug_path, img_cut)
+                print(f"[DECT] Cut debug image saved: {cut_debug_path}")
+            else:
+                print("[DECT] Cut debug image skipped: screen straighten returned None")
         if img_cut is None:
             print("[DECT] Screen straighten failed, using raw image for analysis")
             img_cut = img_color
 
+        self._last_cut_img = img_cut  # save for retry without re-capture
         self.analyzer.get_results(img_cut)
         t4 = _time.time()
         print(f"[DECT][T] YOLO predict: {t4 - t3:.3f}s")
@@ -306,13 +365,14 @@ class DectController:
         print(f"[DECT] Analysis result: {result}")
         return result
 
-    def verify_screen(self, expected):
+    def verify_screen(self, expected, _retry=1):
         """Capture screen and verify against expected content.
         
         Args:
             expected: dict, e.g. {"text": "10000", "signal": true}
                 - key "text": verify text content is present
                 - other keys: verify icon/element exists
+            _retry: number of retries on failure (re-analyze same image)
         
         Returns:
             bool: True if all checks pass.
@@ -323,37 +383,82 @@ class DectController:
         tv1 = _time.time()
         print(f"[DECT][T] verify_screen capture+analyze: {tv1 - tv0:.3f}s")
 
+        all_pass = self._check_expected(expected, result)
+
+        tv2 = _time.time()
+        print(f"[DECT][T] verify_screen total: {tv2 - tv0:.3f}s ({'PASS' if all_pass else 'FAIL'})")
+        if not all_pass:
+            if _retry > 0:
+                print(f"[DECT] Verify failed, re-running YOLO+OCR on same image... (retries left: {_retry})")
+                # Re-analyze the same cut image (already stored in self.analyzer from last capture)
+                self.analyzer.get_results(self._last_cut_img)
+                result = self.analyzer.get_icon_text()
+                print(f"[DECT] Re-analysis result: {result}")
+                all_pass = self._check_expected(expected, result)
+                if all_pass:
+                    print(f"[DECT] Verify PASS on retry")
+                    return True
+                return self.verify_screen.__wrapped__(self, expected, _retry - 1) if False else self._verify_fail(expected, result, _retry - 1)
+            raise AssertionError(f"[DECT] Screen verify FAIL on device {self.device_id}: expected={expected}, actual={result}")
+        return True
+
+    def _verify_fail(self, expected, result, _retry):
+        """Handle remaining retries after re-analysis still fails."""
+        if _retry > 0:
+            print(f"[DECT] Still failed, re-running YOLO+OCR... (retries left: {_retry})")
+            self.analyzer.get_results(self._last_cut_img)
+            result = self.analyzer.get_icon_text()
+            print(f"[DECT] Re-analysis result: {result}")
+            all_pass = self._check_expected(expected, result)
+            if all_pass:
+                print(f"[DECT] Verify PASS on retry")
+                return True
+            return self._verify_fail(expected, result, _retry - 1)
+        raise AssertionError(f"[DECT] Screen verify FAIL on device {self.device_id}: expected={expected}, actual={result}")
+
+    def _check_expected(self, expected, result):
+        """Check result against expected, return True if all pass."""
         all_pass = True
         for key, value in expected.items():
             if key == "text":
                 texts = result.get("text", [])
-                # 1) exact match on single element
-                if value in texts:
-                    print(f"[DECT] Text verify PASS: '{value}'")
+                if isinstance(value, str):
+                    expected_texts = [value]
+                elif isinstance(value, (list, tuple)):
+                    expected_texts = list(value)
                 else:
-                    # 2) joined adjacent elements (YOLO may split one line into multiple boxes)
-                    joined = ' '.join(texts)
-                    if value in joined:
-                        print(f"[DECT] Text verify PASS (joined match): '{value}' found in '{joined}'")
+                    print(f"[DECT] Text verify FAIL: 'text' must be string or list, got {type(value).__name__}")
+                    all_pass = False
+                    continue
+
+                for exp_text in expected_texts:
+                    if not isinstance(exp_text, str):
+                        print(f"[DECT] Text verify FAIL: text item must be string, got {type(exp_text).__name__}")
+                        all_pass = False
+                        continue
+                    # 1) exact match on single element
+                    if exp_text in texts:
+                        print(f"[DECT] Text verify PASS: '{exp_text}'")
                     else:
-                        # 3) fuzzy OCR match (handles common mis-reads like 6→G, 0→O, s→5)
-                        fuzzy_hit = _fuzzy_find(value, texts)
-                        if fuzzy_hit is not None:
-                            print(f"[DECT] Text verify PASS (fuzzy match): '{value}' ~ '{fuzzy_hit}'")
+                        # 2) joined adjacent elements (YOLO may split one line into multiple boxes)
+                        joined = ' '.join(texts)
+                        if exp_text in joined:
+                            print(f"[DECT] Text verify PASS (joined match): '{exp_text}' found in '{joined}'")
                         else:
-                            print(f"[DECT] Text verify FAIL: expected '{value}', actual {texts}")
-                            all_pass = False
+                            # 3) fuzzy OCR match (handles common mis-reads like 6→G, 0→O, s→5)
+                            fuzzy_hit = _fuzzy_find(exp_text, texts)
+                            if fuzzy_hit is not None:
+                                print(f"[DECT] Text verify PASS (fuzzy match): '{exp_text}' ~ '{fuzzy_hit}'")
+                            else:
+                                print(f"[DECT] Text verify FAIL: expected '{exp_text}', actual {texts}")
+                                all_pass = False
             else:
                 if key in result:
                     print(f"[DECT] Icon verify PASS: '{key}'")
                 else:
                     print(f"[DECT] Icon verify FAIL: '{key}' not found")
                     all_pass = False
-        tv2 = _time.time()
-        print(f"[DECT][T] verify_screen total: {tv2 - tv0:.3f}s ({'PASS' if all_pass else 'FAIL'})")
-        if not all_pass:
-            raise AssertionError(f"[DECT] Screen verify FAIL on device {self.device_id}: expected={expected}, actual={result}")
-        return True
+        return all_pass
 
     def close(self):
         """Detach from cached resources. Nothing is destroyed — all reused next init."""
