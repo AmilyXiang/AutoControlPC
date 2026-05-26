@@ -87,7 +87,7 @@ def _find_screen_contour(cnts, img_area):
         peri = cv2.arcLength(c, True)
         for eps in (0.02, 0.04, 0.06, 0.08, 0.10):
             approx = cv2.approxPolyDP(c, eps * peri, True)
-            if len(approx) == 4:
+            if len(approx) == 4 and _is_valid_quad(approx):
                 return approx
 
     # Fallback: use the largest contour (if big enough) and derive
@@ -97,6 +97,28 @@ def _find_screen_contour(cnts, img_area):
         box = cv2.boxPoints(rect)
         return box.reshape(-1, 1, 2).astype(np.int32)
     return None
+
+
+def _is_valid_quad(pts):
+    """Reject degenerate quadrilaterals where corners are too close together."""
+    corners = pts.reshape(4, 2).astype(np.float32)
+    # Check all pairs of points have minimum distance
+    min_dist = np.inf
+    for i in range(4):
+        for j in range(i + 1, 4):
+            d = np.linalg.norm(corners[i] - corners[j])
+            if d < min_dist:
+                min_dist = d
+    # If any two corners are closer than 30 pixels, it's degenerate
+    if min_dist < 30:
+        return False
+    # Check the quadrilateral area vs bounding box area ratio
+    rect = cv2.minAreaRect(pts)
+    rect_area = rect[1][0] * rect[1][1]
+    quad_area = cv2.contourArea(pts)
+    if rect_area > 0 and quad_area / rect_area < 0.5:
+        return False
+    return True
 
 def straighten_screen_from_np(img):
     img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
