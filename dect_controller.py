@@ -436,6 +436,17 @@ class DectController:
                         print(f"[DECT] Text verify FAIL: text item must be string, got {type(exp_text).__name__}")
                         all_pass = False
                         continue
+                    # 0) regex pattern match (prefix "re:")
+                    if exp_text.startswith('re:'):
+                        import re as _re
+                        pattern = exp_text[3:]
+                        joined = ' '.join(texts)
+                        if any(_re.search(pattern, t) for t in texts) or _re.search(pattern, joined):
+                            print(f"[DECT] Text verify PASS (regex): pattern '{pattern}' matched")
+                        else:
+                            print(f"[DECT] Text verify FAIL (regex): pattern '{pattern}' not matched in {texts}")
+                            all_pass = False
+                        continue
                     # 1) exact match on single element
                     if exp_text in texts:
                         print(f"[DECT] Text verify PASS: '{exp_text}'")
