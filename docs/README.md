@@ -455,6 +455,7 @@ python run_testcase.py testcase/DECT/ MyCaseName
 **content 格式**：
 - 验证文本（单个）：`{"text": "Connected"}`
 - 验证文本（多个）：`{"text": ["Base station", "SW version", "IP address"]}`
+- 验证正则（`re:` 前缀）：`{"text": "re:\\d{2}:\\d{2}"}` — 匹配时间格式
 - 验证图标：`{"hold": true, "conference": true}`
 - 混合验证：`{"text": "Connected", "hold": true, "transfer": true}`
 
@@ -465,6 +466,10 @@ python run_testcase.py testcase/DECT/ MyCaseName
 <step type="dect" action="verify_screen" content='{"text": ["Keylock", "Press and hold"]}' device="1" />
 <!-- 文本 + 图标 -->
 <step type="dect" action="verify_screen" content='{"text": "Connected", "hold": true, "conference": true}' device="1" />
+<!-- 正则匹配（re: 前缀）：验证屏幕存在时间格式 HH:MM -->
+<step type="dect" action="verify_screen" content='{"text": "re:\\d{2}:\\d{2}"}' device="1" />
+<!-- 正则匹配：验证日期格式 DD/MM/YYYY -->
+<step type="dect" action="verify_screen" content='{"text": "re:\\d{2}/\\d{2}/\\d{4}"}' device="1" />
 ```
 
 #### `press_and_verify` — 按键后立即验证
