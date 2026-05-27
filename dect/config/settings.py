@@ -19,6 +19,10 @@ class DeviceConfig:
     IPEI_hex: str = ""
     IPEI_dec: str = ""
     IPEI_oct: str = ""
+    lock_pin: str = ""
+    new_lock_pin: str = ""
+    wrong_pin: str = ""
+    reset_pin_code: str = ""
 
     @classmethod
     def from_dict(cls, d: dict) -> "DeviceConfig":
