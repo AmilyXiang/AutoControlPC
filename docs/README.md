@@ -459,6 +459,8 @@ python run_testcase.py testcase/DECT/ MyCaseName
 - 验证图标：`{"hold": true, "conference": true}`
 - 混合验证：`{"text": "Connected", "hold": true, "transfer": true}`
 
+> **正则匹配说明**：text 项以 `re:` 开头时，后面的部分作为 Python 正则表达式，对屏幕 OCR 识别到的每个文本元素（以及拼接后的整行）执行 `re.search`，任一匹配即 PASS。可用于校验任意动态内容（时间、日期、IP、版本号、MAC 地址等）。
+
 ```xml
 <!-- 单文本 -->
 <step type="dect" action="verify_screen" content='{"text": "Connected"}' device="1" />
@@ -466,10 +468,18 @@ python run_testcase.py testcase/DECT/ MyCaseName
 <step type="dect" action="verify_screen" content='{"text": ["Keylock", "Press and hold"]}' device="1" />
 <!-- 文本 + 图标 -->
 <step type="dect" action="verify_screen" content='{"text": "Connected", "hold": true, "conference": true}' device="1" />
-<!-- 正则匹配（re: 前缀）：验证屏幕存在时间格式 HH:MM -->
+<!-- 正则匹配：验证时间 HH:MM -->
 <step type="dect" action="verify_screen" content='{"text": "re:\\d{2}:\\d{2}"}' device="1" />
-<!-- 正则匹配：验证日期格式 DD/MM/YYYY -->
+<!-- 正则匹配：验证日期 DD/MM/YYYY -->
 <step type="dect" action="verify_screen" content='{"text": "re:\\d{2}/\\d{2}/\\d{4}"}' device="1" />
+<!-- 正则匹配：验证 IP 地址 -->
+<step type="dect" action="verify_screen" content='{"text": "re:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"}' device="1" />
+<!-- 正则匹配：验证固件版本号 x.y.z -->
+<step type="dect" action="verify_screen" content='{"text": "re:\\d+\\.\\d+\\.\\d+"}' device="1" />
+<!-- 正则匹配：验证 MAC 地址 -->
+<step type="dect" action="verify_screen" content='{"text": "re:[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}"}' device="1" />
+<!-- 混合使用：固定文本 + 正则 -->
+<step type="dect" action="verify_screen" content='{"text": ["Connected", "re:\\d{2}:\\d{2}"]}' device="1" />
 ```
 
 #### `press_and_verify` — 按键后立即验证
