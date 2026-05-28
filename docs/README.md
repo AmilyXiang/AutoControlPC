@@ -516,6 +516,58 @@ python run_testcase.py testcase/DECT/ MyCaseName
 ```xml
 <step type="dect" action="close" device="1" />
 ```
+### 条件分支（`<if>` / `<else>`）
+
+在执行步骤前检查屏幕状态，根据结果决定执行不同分支。条件判断会拍照并分析当前屏幕。
+
+**语法**：
+```xml
+<if type="dect" check='{"条件"}' device="1">
+    <!-- 条件满足时执行 -->
+    <step ... />
+    <else>
+        <!-- 条件不满足时执行（可选） -->
+        <step ... />
+    </else>
+</if>
+```
+
+| 属性 | 必填 | 说明 |
+|------|------|------|
+| `type` | 是 | 目前仅支持 `"dect"`（拍照检测屏幕） |
+| `check` | 是 | JSON 条件，格式同 `verify_screen` 的 content |
+| `device` | 否 | 设备编号，默认 `"1"` |
+
+**check 条件格式**（与 verify_screen 相同）：
+- 检测图标：`{"lock": true}`
+- 检测文本：`{"text": "Keylock"}`
+- 检测多文本：`{"text": ["Press and hold", "*"]}`
+- 混合：`{"text": "Connected", "hold": true}`
+
+**示例 1**：如果有 lock 图标，长按 * 解锁
+```xml
+<if type="dect" check='{"lock": true}' device="1">
+    <step type="dect" action="press_key" content="*" press_type="long" device="1" />
+</if>
+```
+
+**示例 2**：有 lock 则解锁，没有则按 onhook 确保回到 idle
+```xml
+<if type="dect" check='{"lock": true}' device="1">
+    <step type="dect" action="press_key" content="*" press_type="long" device="1" />
+    <else>
+        <step type="dect" action="press_key" content="onhook" device="1" />
+    </else>
+</if>
+```
+
+**示例 3**：检测屏幕是否显示 "Connected"，是则挂机
+```xml
+<if type="dect" check='{"text": "Connected"}' device="1">
+    <step type="dect" action="press_key" content="onhook" device="1" />
+    <step type="dect" action="press_key" content="onhook" device="2" />
+</if>
+```
 
 ## 网络事件系统
 
