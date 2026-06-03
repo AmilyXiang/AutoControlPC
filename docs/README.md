@@ -34,6 +34,7 @@
 ### DECT自动化（相机 + 机械）
 - **多设备支持**：通过 `device` 属性同时控制多套 DECT 设备（移动臂 + 摄像头）
 - **集中配置**：设备串口、摄像头、分机号等统一在 `dect/config/devices.json` 管理
+- **型号能力系统**：`dect/config/model_profiles.json` 定义各型号 capabilities，`require_cap` 属性让用例自动跳过不支持的步骤
 - **变量引用**：XML 用例中用 `{device.X.field}` 引用任意设备配置项
 - **DECT按键操作**：支持拨号、摘机、挂机、回原点等动作
 - **视觉识别**：YOLO + PaddleOCR 识别屏幕文字和图标
@@ -101,7 +102,8 @@ AutoControlPC/
 ├── input_method_util.py          # 输入法检测
 ├── dect/                         # DECT 模块
 │   ├── config/                   # 设备配置
-│   │   ├── devices.json          # 多设备配置（串口、摄像头、分机号等）
+│   │   ├── devices.json          # 多设备配置（型号、串口、摄像头、分机号等）
+│   │   ├── model_profiles.json   # 型号能力配置（capabilities per model）
 │   │   └── settings.py           # DeviceConfig dataclass + 加载逻辑
 │   ├── image/                    # 摄像头、视觉分析
 │   └── move/                     # 运动控制
@@ -127,11 +129,13 @@ AutoControlPC/
 ```json
 {
     "1": {
+        "model": "8262",
         "com_port": "COM3",
         "camera_index": 0,
         "ext_number": "20001"
     },
     "2": {
+        "model": "8234",
         "com_port": "COM5",
         "camera_index": 1,
         "ext_number": "20002"
@@ -141,15 +145,83 @@ AutoControlPC/
 
 新增设备只需在此文件中添加一条记录。运动参数（速度、加速度、按压深度等）在 `dect/move/setting.py` 中配置。
 
+### 型号能力配置
+
+不同型号的硬件能力差异定义在 `dect/config/model_profiles.json`：
+
+```json
+{
+    "8262": {
+        "capabilities": ["lock_key_long_press"],
+        "navigation": {
+            "settings_auto_keylock": ["menu", "down", "ok", "down", "down", "down", "down", "ok", "down", "ok"],
+            "service_menu": ["menu", "*", "7", "3", "7", "8", "4", "2", "3", "*"],
+            "service_status": ["down", "down", "down", "ok"],
+            "test_menu": ["menu", "*", "7", "8", "9", "*"],
+            "test_sw_info": ["down", "down", "down", "down", "down", "down", "down", "ok"]
+        }
+    },
+    "8234": {
+        "capabilities": [],
+        "navigation": { "..." : "同上" }
+    }
+}
+```
+
+**capabilities**：型号硬件能力，配合 `require_cap` 实现 case 级跳过  
+**navigation**：型号导航路径，配合 `navigate` action 简化重复按键序列
+
+在 `init` step 上使用 `require_cap` 属性声明 case 所需的硬件能力。运行时在 case 开始前检查，型号不具备则整个 case 标记 SKIP：
+
+```xml
+<!-- 声明本 case 需要 lock_key_long_press 能力 -->
+<step type="dect" action="init" device="1" require_cap="lock_key_long_press" />
+```
+
+这样同一份测试用例可以跑在不同型号上，不支持的 case 会被自动 SKIP，不执行任何步骤。
+
+### 导航路径（navigate action）
+
+使用 `navigate` action 可将常用的菜单导航序列简化为一行：
+
+```xml
+<!-- 之前：11 行 press_key -->
+<step type="dect" action="press_key" content="menu" device="1" />
+<step type="dect" action="press_key" content="*" device="1" />
+<step type="dect" action="press_key" content="7" device="1" />
+<!-- ... 省略 8 行 ... -->
+
+<!-- 之后：1 行 navigate -->
+<step type="dect" action="navigate" content="service_menu" device="1" />
+```
+
+**内置导航路径**（在 `model_profiles.json` 中定义）：
+
+| 路径名 | 说明 |
+|--------|------|
+| `settings` | 进入 Settings 菜单 |
+| `settings_security` | Settings → Security |
+| `settings_auto_keylock` | Settings → Security → Auto key lock |
+| `service_menu` | 进入 Service 菜单（含 menu + *7378423*）|
+| `service_status` | Service menu 内选择 Status |
+| `service_ipei` | Service menu 内选择 IPEI |
+| `test_menu` | 进入 Test 菜单（含 menu + *789*）|
+| `test_sw_info` | Test menu 内选择 SW info |
+
+**可选参数**：
+- `interval="0.3"`：按键间隔秒数，默认 0.3s
+
+**自定义导航路径**：直接在 `model_profiles.json` 中为对应型号添加新路径即可，代码无需修改。
+
 ### 多设备用例
 
-通过 `device` 属性指定操作哪套设备（默认为 `"1"`）：
+通过 `device` 属性指定操作哪套设备（默认为 `"1"`）。型号从 `devices.json` 自动读取，无需在用例中指定：
 
 ```xml
 <testcase name="DECT_双设备通话测试">
-    <!-- 初始化两套设备 -->
-    <step type="dect" action="init" content="8262" device="1" />
-    <step type="dect" action="init" content="8262" device="2" />
+    <!-- 初始化两套设备（型号自动从 devices.json 读取） -->
+    <step type="dect" action="init" device="1" />
+    <step type="dect" action="init" device="2" />
 
     <!-- 设备1 拨打 设备2 的分机号 -->
     <step type="dect" action="dial_number" content="{device.2.ext_number}" device="1" />
@@ -399,7 +471,7 @@ python run_testcase.py testcase/DECT/ MyCaseName
 | ocr | find_and_click | OCR定位并点击 |
 | window | maximize_top | 最大化顶部窗口 |
 | icon | find_and_move | 图标检测并移动鼠标 |
-| dect | init | 初始化 DECT 控制器 |
+| dect | init | 初始化 DECT 控制器（型号从 devices.json 读取） |
 | dect | press_key | DECT 按键操作 |
 | dect | dial_number | 整串号码拨号 |
 | dect | verify_screen | 验证 DECT 屏幕内容 |
@@ -414,12 +486,20 @@ python run_testcase.py testcase/DECT/ MyCaseName
 
 | 属性 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| `content` | 否 | `"8262"` | 设备型号（决定按键布局），如 `8262`、`8234` |
+| `content` | 否 | 从 `devices.json` 读取 | 可选覆盖型号（如 `8262`、`8234`），不填则使用设备配置中的 `model` 字段 |
 | `device` | 否 | `"1"` | 设备编号，对应 `dect/config/devices.json` 中的 key |
+| `require_cap` | 否 | — | 声明本 case 需要的硬件能力（如 `lock_key_long_press`）。型号不具备该能力时整个 case 自动 SKIP |
 
 ```xml
+<!-- 推荐：不指定型号，自动从 devices.json 读取 -->
+<step type="dect" action="init" device="1" />
+<!-- 覆盖型号（调试用） -->
 <step type="dect" action="init" content="8234" device="1" />
+<!-- 声明能力需求：型号不支持时整个 case 跳过 -->
+<step type="dect" action="init" device="1" require_cap="lock_key_long_press" />
 ```
+
+> **约定**：`require_cap` 只标注在 `init` step 上。运行时在 case 开始前一次性检查所有 init step 的 `require_cap`，任一不满足则整个 case 标记为 SKIP，不执行任何步骤。
 
 #### `press_key` — 按键
 

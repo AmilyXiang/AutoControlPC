@@ -488,14 +488,16 @@ def get_dect_controller(device_id="1"):
     return _controllers[device_id]
 
 
-def init_dect_controller(model="8262", device_id="1"):
+def init_dect_controller(model=None, device_id="1"):
     """Initialize a DectController for the specified device.
     
-    com_port and camera_name are read from devices.json via dect.config.
+    model, com_port and camera_name are read from devices.json via dect.config.
+    If model is explicitly provided, it overrides the config value.
     """
     from dect.config.settings import get_device_config
     cfg = get_device_config(device_id)
-    _controllers[device_id] = DectController(model=model,
+    effective_model = model if model else cfg.model
+    _controllers[device_id] = DectController(model=effective_model,
                                               com_port=cfg.com_port,
                                               device_id=device_id,
                                               camera_name=cfg.camera_name)
@@ -507,6 +509,11 @@ def close_dect_controller(device_id="1"):
     if device_id in _controllers:
         _controllers[device_id].close()
         del _controllers[device_id]
+
+
+def get_device_model(device_id="1") -> str:
+    """获取指定设备当前初始化的型号（如 '8262'）。未初始化时返回空字符串。"""
+    return _cached_models.get(device_id, "")
 
 
 def destroy_all():

@@ -84,11 +84,31 @@ def _check_async_audio_threads():
         raise AssertionError(f"[AUDIO] Async audio failed: {'; '.join(errors)}")
 
 
+def _check_case_capabilities(testcase_elem):
+    """检查用例 init step 上的 require_cap，型号不满足则返回首个缺失项。
+    
+    约定：require_cap 只标注在 action="init" 的 step 上。
+    返回 None 表示全部满足；返回 (cap, model, device_id) 表示首个不满足的。
+    """
+    from dect.config.settings import get_device_config, model_has_capability
+    for elem in testcase_elem.iter('step'):
+        if elem.get('action') != 'init':
+            continue
+        cap = elem.get('require_cap')
+        if cap:
+            device_id = elem.get('device', '1')
+            cfg = get_device_config(device_id)
+            if not model_has_capability(cfg.model, cap):
+                return (cap, cfg.model, device_id)
+    return None
+
+
 def execute_step(step):
     step_type = step.get('type')
     action = step.get('action')
     content = _resolve_device_vars(step.get('content'))
     print(f"Execute step: type={step_type}, action={action}, content={content}")
+
     if step_type == 'keyboard':
         if action == 'press_key':
             pyautogui.press(content)
@@ -380,9 +400,8 @@ def execute_step(step):
         from dect_controller import init_dect_controller, get_dect_controller, close_dect_controller
         device_id = step.get('device', '1')
         if action == 'init':
-            # content: 设备型号 (例如: 8262), com_port和camera_name从devices.json读取
-            model = content if content else '8262'
-            init_dect_controller(model=model, device_id=device_id)
+            # model 从 devices.json 读取; content 可选覆盖型号
+            init_dect_controller(model=content or None, device_id=device_id)
         elif action == 'press_key':
             # content: 按键名 (例如: 1, hangup, ok)
             press_type = step.get('press_type', 'short')
@@ -423,6 +442,18 @@ def execute_step(step):
             # 仅拍照分析，不验证
             ctrl = get_dect_controller(device_id)
             ctrl.capture_and_analyze()
+        elif action == 'navigate':
+            # content: 导航路径名（如 'service_menu', 'test_sw_info'）
+            # 自动查询设备型号并获取对应的按键序列
+            from dect.config.settings import get_device_config, get_navigation_path
+            ctrl = get_dect_controller(device_id)
+            cfg = get_device_config(device_id)
+            path = get_navigation_path(cfg.model, content)
+            interval = float(step.get('interval', 0.3))
+            print(f"[DECT] navigate: {content} ({cfg.model}) -> {path}")
+            for key in path:
+                ctrl.press_key(key)
+                time.sleep(interval)
         elif action == 'origin':
             ctrl = get_dect_controller(device_id)
             ctrl.origin()
@@ -514,6 +545,16 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
         print(f"\nStart testcase: {display_name}")
         tc_start = time.time()
         steps_done = 0
+
+        # capability gate: 开始前检查用例所有 require_cap，型号不支持则整个 case SKIP
+        missing_cap = _check_case_capabilities(testcase)
+        if missing_cap:
+            cap_str, model_str, device_str = missing_cap
+            print(f"[SKIP CASE] Testcase requires capability '{cap_str}' but model {model_str} (device {device_str}) lacks it")
+            tc_duration = time.time() - tc_start
+            report.add_result(display_name, 'SKIP', tc_duration, steps_done=0)
+            continue
+
         try:
             for elem in testcase:
                 if elem.tag == 'step':

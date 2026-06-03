@@ -1,5 +1,6 @@
 {
     "1": {
+        "model": "8234",
         "com_port": "COM3",
         "camera_name": "camera1",
         "ext_number": "110",
@@ -14,6 +15,7 @@
         "reset_pin_code": ""
     },
     "2": {
+        "model": "8234",
         "com_port": "COM5",
         "camera_name": "camera2",
         "ext_number": "109",
