@@ -28,9 +28,15 @@
     "8234": {
         "capabilities": [],
         "navigation": {
-            "settings": ["menu", "down", "ok"],
-            "settings_security": ["menu", "down", "ok", "down", "down", "down", "down", "ok"],
-            "settings_auto_keylock": ["menu", "down", "ok", "down", "down", "down", "down", "ok", "down", "ok"],
+            "settings": ["menu", "down", "right", "ok"],
+            "contacts": ["menu", "ok"],
+            "centraldirectory": ["menu", "right", "ok"],
+            "calls": ["menu", "right", "right", "ok"],
+            "connectivity": ["menu", "down", "ok"],
+            "audiosettings": ["menu", "down", "right", "right", "ok"],
+            "messaging": ["menu", "down", "down", "ok"],
+            "settings_security": ["down", "down", "down", "down", "ok"],
+            "settings_auto_keylock": ["down", "down", "down", "down", "ok", "down", "ok"],
             "service_menu": ["menu", "*", "7", "3", "7", "8", "4", "2", "3", "*"],
             "service_status": ["down", "down", "down", "ok"],
             "service_ipei": ["down", "down", "down", "down", "ok"],
