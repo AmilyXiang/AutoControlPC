@@ -37,11 +37,13 @@
             "messaging": ["menu", "down", "down", "ok"],
             "settings_security": ["down", "down", "down", "down", "ok"],
             "settings_auto_keylock": ["down", "down", "down", "down", "ok", "down", "ok"],
+            "settings_autoanswer" : ["down", "down", "down", "down","down", "down","down", "down","down", "down","ok"],
+            "settings_language": ["down", "ok"],
             "service_menu": ["menu", "*", "7", "3", "7", "8", "4", "2", "3", "*"],
             "service_status": ["down", "down", "down", "ok"],
             "service_ipei": ["down", "down", "down", "down", "ok"],
             "test_menu": ["menu", "*", "7", "8", "9", "*"],
-            "test_sw_info": ["down", "down", "down", "down", "down", "down", "down", "ok"]
+            "test_sw_info": ["down", "down", "down", "down", "down", "down", "down", "ok"]            
         }
     }
 }
