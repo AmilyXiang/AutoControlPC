@@ -39,6 +39,7 @@
             "settings_auto_keylock": ["down", "down", "down", "down", "ok", "down", "ok"],
             "settings_autoanswer" : ["down", "down", "down", "down","down", "down","down", "down","down", "down","ok"],
             "settings_language": ["down", "ok"],
+            "settings_status": ["down", "down", "down", "down","down", "down", "down", "down", "ok"],
             "service_menu": ["menu", "*", "7", "3", "7", "8", "4", "2", "3", "*"],
             "service_status": ["down", "down", "down", "ok"],
             "service_ipei": ["down", "down", "down", "down", "ok"],
