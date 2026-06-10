@@ -642,7 +642,25 @@ def resolve_xml_paths(path_arg):
     sys.exit(2)
 
 
+def _cleanup_dect_hardware():
+    """尽力回原点并释放 DECT 硬件，用于 atexit/signal 场景。"""
+    try:
+        from dect_controller import destroy_all
+        destroy_all()
+    except Exception:
+        pass
+
+
 if __name__ == '__main__':
+    import atexit
+    import signal
+
+    atexit.register(_cleanup_dect_hardware)
+
+    # Windows: 捕获 Ctrl+Break (Jenkins abort 常用)
+    if hasattr(signal, 'SIGBREAK'):
+        signal.signal(signal.SIGBREAK, lambda sig, frame: sys.exit(1))
+
     if len(sys.argv) < 2:
         print("Usage: python run_testcase.py <xml_file/dir/glob> [testcase_name]")
         print("Example: python run_testcase.py testcase/rainbow_main.xml")
@@ -654,21 +672,27 @@ if __name__ == '__main__':
     testcase_name = sys.argv[2] if len(sys.argv) > 2 else None
     xml_paths = resolve_xml_paths(xml_arg)
     print(f"XML files to execute ({len(xml_paths)}): {xml_paths}")
-    report = run_and_report(xml_paths, testcase_name)
-    # 有失败用例时返回非零退出码
-    _, _, failed, _ = report.summary()
-    # 释放 DECT 硬件资源（串口、相机、模型）
+    failed = 0
     try:
-        from dect_controller import destroy_all
-        destroy_all()
-    except Exception:
-        pass
-    # 清理调试图片
-    import glob
-    for f in glob.glob('debug_match_*.png'):
+        report = run_and_report(xml_paths, testcase_name)
+        # 有失败用例时返回非零退出码
+        _, _, failed, _ = report.summary()
+    except KeyboardInterrupt:
+        print("\n[WARN] User interrupted (Ctrl+C), returning to origin and cleaning up...")
+        failed = 1
+    finally:
+        # 释放 DECT 硬件资源（串口、相机、模型）— 内部会先回原点
         try:
-            os.remove(f)
-        except Exception as e:
-            print(f"Failed to delete debug image: {f}, reason: {e}")
+            from dect_controller import destroy_all
+            destroy_all()
+        except Exception:
+            pass
+        # 清理调试图片
+        import glob
+        for f in glob.glob('debug_match_*.png'):
+            try:
+                os.remove(f)
+            except Exception as e:
+                print(f"Failed to delete debug image: {f}, reason: {e}")
     if failed > 0:
         sys.exit(1)

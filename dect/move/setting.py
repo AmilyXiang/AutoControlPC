@@ -10,5 +10,5 @@ class Settings:
         self.baud_rate = 115200
         self.timeout = 1    
         self.long_press_time = 2  # 长按时间阈值，单位为秒
-        self.short_press_time = 0.2  # 短按时间，单位为秒
+        self.short_press_time = 0.1  # 短按时间，单位为秒
         self.press_depth = 3  # 按压深度，单位为毫米/8262=2,8234=3

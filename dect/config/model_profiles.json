@@ -1,6 +1,6 @@
 {
     "8262": {
-        "capabilities": ["lock_key_long_press"],
+        "capabilities": ["lock_key_long_press", "home_key"],
         "navigation": {
             "settings": ["menu", "down", "ok"],
             "settings_security": ["menu", "down", "ok", "down", "down", "down", "down", "ok"],

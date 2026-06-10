@@ -157,13 +157,13 @@ _cached_camera_names = {}
 
 # Debug switch: controls only whether cropped images are saved.
 # Raw images are always saved.
-_SAVE_CUT_DEBUG_IMAGE = False
+_SAVE_CUT_DEBUG_IMAGE = True
 
 # Analyzer (YOLO + PaddleOCR) is shared across all devices
 _analyzer = None
 
 
-def _ensure_vision_loaded(device_id="1", camera_name=""):
+def _ensure_vision_loaded(device_id="1", camera_name="", exposure_time=50000):
     """Load YOLO + PaddleOCR models (shared) and start camera for specified device."""
     global _analyzer
     import time as _t
@@ -195,7 +195,7 @@ def _ensure_vision_loaded(device_id="1", camera_name=""):
         else:
             from dect.image.getImage import CameraGrabber
             t_cam0 = _t.time()
-            _grabbers[device_id] = CameraGrabber(camera_name=camera_name)
+            _grabbers[device_id] = CameraGrabber(camera_name=camera_name, exposure_time=exposure_time)
             _grabbers[device_id].start_grabbing()
             _cached_camera_names[device_id] = camera_name
             t_cam1 = _t.time()
@@ -208,7 +208,7 @@ def _ensure_vision_loaded(device_id="1", camera_name=""):
         except Exception:
             pass
         from dect.image.getImage import CameraGrabber
-        _grabbers[device_id] = CameraGrabber(camera_name=camera_name)
+        _grabbers[device_id] = CameraGrabber(camera_name=camera_name, exposure_time=exposure_time)
         _grabbers[device_id].start_grabbing()
         _cached_camera_names[device_id] = camera_name
         print(f"[DECT] Camera[{device_id}] re-initialized with name={camera_name}")
@@ -247,7 +247,7 @@ def _ensure_motion_loaded(device_id, model, com_port):
 class DectController:
     """High-level controller for DECT phone hardware interaction."""
 
-    def __init__(self, model="8262", com_port=None, device_id="1", camera_name=""):
+    def __init__(self, model="8262", com_port=None, device_id="1", camera_name="", exposure_time=50000):
         self.device_id = device_id
         # Ensure MvCamera SDK path is set up
         _mvcam_env = os.getenv('MVCAM_COMMON_RUNENV')
@@ -262,7 +262,7 @@ class DectController:
         self.mover = _movers[device_id]
 
         # Eagerly load vision at init time so first capture/verify is fast
-        _ensure_vision_loaded(device_id, camera_name)
+        _ensure_vision_loaded(device_id, camera_name, exposure_time)
         self.grabber = _grabbers[device_id]
         self.analyzer = _analyzer
         print(f"[DECT] Init complete: device={device_id}, model={model}")
@@ -461,8 +461,16 @@ class DectController:
                             if fuzzy_hit is not None:
                                 print(f"[DECT] Text verify PASS (fuzzy match): '{exp_text}' ~ '{fuzzy_hit}'")
                             else:
-                                print(f"[DECT] Text verify FAIL: expected '{exp_text}', actual {texts}")
-                                all_pass = False
+                                # 4) all-words-present match (handles multi-line display split by OCR)
+                                words = exp_text.split()
+                                if len(words) > 1 and all(
+                                    any(w in t or (_fuzzy_find(w, [t]) is not None) for t in texts)
+                                    for w in words
+                                ):
+                                    print(f"[DECT] Text verify PASS (all words present): '{exp_text}' words found in {texts}")
+                                else:
+                                    print(f"[DECT] Text verify FAIL: expected '{exp_text}', actual {texts}")
+                                    all_pass = False
             else:
                 if key in result:
                     print(f"[DECT] Icon verify PASS: '{key}'")
@@ -500,7 +508,8 @@ def init_dect_controller(model=None, device_id="1"):
     _controllers[device_id] = DectController(model=effective_model,
                                               com_port=cfg.com_port,
                                               device_id=device_id,
-                                              camera_name=cfg.camera_name)
+                                              camera_name=cfg.camera_name,
+                                              exposure_time=cfg.exposure_time)
     return _controllers[device_id]
 
 
@@ -536,6 +545,14 @@ def destroy_all():
     _grabbers.clear()
     _cached_camera_names.clear()
     _analyzer = None
+    # Return all movers to origin before closing serial ports
+    for device_id, mover in list(_movers.items()):
+        try:
+            mover.origin()
+            _serials[device_id].receive_response()
+            print(f"[DECT] Device {device_id} returned to origin before shutdown")
+        except Exception:
+            pass
     # Close all serial ports
     for device_id, serial in list(_serials.items()):
         try:

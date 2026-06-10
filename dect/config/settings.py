@@ -16,6 +16,7 @@ class DeviceConfig:
     com_port: str
     model: str = "8262"
     camera_name: str = ""
+    exposure_time: float = 50000
     ext_number: str = ""
     ext_name: str = ""
     emergency_number: str = ""

@@ -24,9 +24,8 @@ from MvCameraControl_class import *
 
 
 class CameraGrabber():
-    def __init__(self, camera_name=""):
+    def __init__(self, camera_name="", exposure_time=50000):
         MvCamera.MV_CC_Initialize()
-        CameraOperation.set_exposure_time = 60000
 
         SDKVersion = MvCamera.MV_CC_GetSDKVersion()
         print ("SDKVersion[0x%x]" % SDKVersion)
@@ -134,11 +133,11 @@ class CameraGrabber():
         ret = self.cam.MV_CC_SetEnumValue("ExposureAuto", 0)
         if ret != 0:
             print("Warning: set ExposureAuto fail! ret[0x%x]" % ret)
-        ret = self.cam.MV_CC_SetFloatValue("ExposureTime", float(50000))
+        ret = self.cam.MV_CC_SetFloatValue("ExposureTime", float(exposure_time))
         if ret != 0:
             print("Warning: set ExposureTime fail! ret[0x%x]" % ret)
         else:
-            print("ExposureTime set to 50000 us")
+            print(f"ExposureTime set to {exposure_time} us")
 
     def decoding_char(self, ctypes_char_array):
         byte_str = memoryview(ctypes_char_array).tobytes()
