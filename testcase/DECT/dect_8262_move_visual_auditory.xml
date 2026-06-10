@@ -2,8 +2,8 @@
 <testcases>
     <testcase name="DECT_handset_move_visual_auditory_test">
         <!-- 1. 初始化 DECT 控制器 -->
-        <step type="dect" action="init" content="8234" device="1" />
-        <step type="dect" action="init" content="8234" device="2" />
+        <step type="dect" action="init" device="1" />
+        <step type="dect" action="init" device="2" />
         <step type="wait" action="sleep" content="1" />
 
         <!-- 2. 设备1拨打设备2的分机号 -->
