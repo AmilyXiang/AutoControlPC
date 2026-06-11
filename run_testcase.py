@@ -410,7 +410,7 @@ def execute_step(step):
         elif action == 'dial_number':
             # content: 整串号码 (例如: 10000, *123#)
             # 支持的字符: 0-9, *, #
-            interval = float(step.get('interval', 0.5))
+            interval = float(step.get('interval', 0))
             ctrl = get_dect_controller(device_id)
             for ch in content:
                 if ch in '0123456789*#':
