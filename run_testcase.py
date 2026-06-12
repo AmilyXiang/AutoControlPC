@@ -449,7 +449,7 @@ def execute_step(step):
             ctrl = get_dect_controller(device_id)
             cfg = get_device_config(device_id)
             path = get_navigation_path(cfg.model, content)
-            interval = float(step.get('interval', 0.3))
+            interval = float(step.get('interval', 0))
             print(f"[DECT] navigate: {content} ({cfg.model}) -> {path}")
             for key in path:
                 ctrl.press_key(key)
