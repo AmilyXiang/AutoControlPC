@@ -1,7 +1,7 @@
 description: Ultralytics best model trained on /home/dell/project/yolo/data.yaml
 author: Ultralytics
-date: '2026-05-22T16:55:34.719421'
-version: 8.4.31
+date: '2026-06-16T09:09:52.213360'
+version: 8.4.39
 license: AGPL-3.0 License (https://ultralytics.com/license)
 docs: https://docs.ultralytics.com
 stride: 32
@@ -40,6 +40,7 @@ names:
   26: inCall
   27: lock
   28: voicemail
+  29: audiosettings
 args:
   batch: 1
   fraction: 1.0
