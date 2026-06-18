@@ -552,7 +552,7 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
             cap_str, model_str, device_str = missing_cap
             print(f"[SKIP CASE] Testcase requires capability '{cap_str}' but model {model_str} (device {device_str}) lacks it")
             tc_duration = time.time() - tc_start
-            report.add_result(display_name, 'SKIP', tc_duration, steps_done=0)
+            report.add_result(display_name, 'SKIP', tc_duration, steps_done=0, case_start_time=tc_start)
             continue
 
         try:
@@ -565,10 +565,10 @@ def execute_testcases(xml_path, testcase_name=None, report=None):
                     if executed:
                         steps_done += executed
             tc_duration = time.time() - tc_start
-            report.add_result(display_name, 'PASS', tc_duration, steps_done=steps_done)
+            report.add_result(display_name, 'PASS', tc_duration, steps_done=steps_done, case_start_time=tc_start)
         except Exception as e:
             tc_duration = time.time() - tc_start
-            report.add_result(display_name, 'FAIL', tc_duration, error=e, steps_done=steps_done)
+            report.add_result(display_name, 'FAIL', tc_duration, error=e, steps_done=steps_done, case_start_time=tc_start)
             print(f"[ERROR] Testcase '{display_name}' execution failed: {e}")
             # 报错时尝试让所有 DECT 机械回原点
             try:

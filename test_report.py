@@ -42,19 +42,22 @@ class TestReport:
     def __init__(self, xml_path):
         self.xml_path = xml_path
         self.start_time = time.time()
-        self.results = []  # list of dict: name, status, duration, error, steps_done
+        self.results = []  # list of dict: name, status, duration, error, steps_done, case_start_time
 
-    def add_result(self, name, status, duration, error=None, steps_done=0):
+    def add_result(self, name, status, duration, error=None, steps_done=0, case_start_time=None):
         """
         Add one testcase result.
         status: 'PASS' | 'FAIL' | 'SKIP'
         """
+        if case_start_time is None:
+            case_start_time = time.time()
         self.results.append({
             'name': name,
             'status': status,
             'duration': duration,
             'error': str(error) if error else None,
             'steps_done': steps_done,
+            'case_start_time': case_start_time,
         })
 
     def summary(self):
@@ -81,6 +84,7 @@ class TestReport:
         rows_html = ""
         for idx, r in enumerate(self.results, 1):
             status_cls = {'PASS': 'pass', 'FAIL': 'fail', 'SKIP': 'skip'}.get(r['status'], '')
+            case_start_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(r['case_start_time']))
             error_html = ""
             if r['error']:
                 error_html = f'<div class="error-detail"><b>Failure reason:</b><pre>{escape(r["error"])}</pre></div>'
@@ -89,6 +93,7 @@ class TestReport:
                 <td>{idx}</td>
                 <td>{escape(r['name'])}</td>
                 <td><span class="badge {status_cls}">{r['status']}</span></td>
+                <td>{case_start_str}</td>
                 <td>{r['steps_done']}</td>
                 <td>{r['duration']:.2f}s</td>
             </tr>"""
@@ -96,7 +101,7 @@ class TestReport:
                 rows_html += f"""
             <tr class="error-row">
                 <td></td>
-                <td colspan="4">{error_html}</td>
+                <td colspan="5">{error_html}</td>
             </tr>"""
 
         html = f"""<!doctype html>
@@ -122,7 +127,7 @@ class TestReport:
 
 <table>
 <thead>
-    <tr><th>#</th><th>Testcase Name</th><th>Status</th><th>Steps</th><th>Duration</th></tr>
+    <tr><th>#</th><th>Testcase Name</th><th>Status</th><th>Case Start Time</th><th>Steps</th><th>Duration</th></tr>
 </thead>
 <tbody>
 {rows_html}
